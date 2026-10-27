@@ -1,0 +1,24 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets and generated keys
+pgp-keys/
+.env
+.env.*
+
+# Logs and local backups
+*.log
+dist.backup-*/
+dist.pre-uninstall-*/
+
+# Release artifacts (attach the ZIP to a GitHub Release instead)
+*.zip
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,117 @@
+VencordPGP - Instalador para Windows
+===================================
+
+QUE HACE
+--------
+Instala el plugin VencordPGP (cifrado PGP automatico para MD de Discord)
+dentro de tu Vencord. Antes de tocar nada hace backup de:
+  - %APPDATA%\Vencord\dist
+  - %APPDATA%\Vencord\settings\settings.json
+
+Verifica la integridad del payload con SHA-256 y activa el plugin.
+
+
+REQUISITOS
+----------
+- Windows 10/11.
+- Discord instalado.
+- Vencord YA instalado e inyectado (si no lo tienes: https://vencord.dev/download).
+- PowerShell 5.1 (viene con Windows).
+
+
+COMO USARLO
+-----------
+1. Descomprime este ZIP.
+2. Doble clic en "Instalar VencordPGP.cmd".
+3. Si Discord esta abierto, te preguntara si cerrarlo (recomendado).
+4. Confirma la instalacion (Enter).
+5. Listo. Si cerraste Discord, te ofrecera abrirlo.
+
+Preguntas: como maximo 2-3 (cerrar Discord, confirmar, abrir). Nada mas.
+
+
+DESPUES DE INSTALAR
+-------------------
+1. Abre Discord > Ajustes > Vencord > Plugins > VencordPGP.
+2. Pega tu clave privada PGP y la passphrase, y pulsa "Desbloquear".
+   La clave privada vive SOLO en memoria por defecto: no se sincroniza ni se
+   envia a ningun servidor. Al cerrar Discord tendras que pegarla otra vez.
+   Opcionalmente puedes guardarla CIFRADA en este equipo (vault local con
+   contrasena, PBKDF2 + AES-256-GCM); ver "Clave guardada" en el PGP Key
+   Manager. En v1 ese vault tambien guarda la passphrase de la clave por
+   defecto: desmarca la casilla si no quieres guardarla.
+3. Anade la clave publica de la otra persona con su ID de Discord
+   (clic derecho > Copiar ID). El nombre es solo informativo.
+4. Compara la huella digital por un canal independiente (voz, en persona)
+   antes de marcarla como verificada.
+5. Escribe en un MD y pulsa Enter: se cifra al enviar y se descifra al recibir.
+
+
+GENERAR CLAVES (opcional, si tienes el repo del plugin)
+-------------------------------------------------------
+  node scripts/generate-test-keys.mjs "TuNombre" "passphrase-larga"
+
+Comparte solo la clave publica. Nunca compartas la privada.
+
+
+DESINSTALAR
+-----------
+Doble clic en "Desinstalar VencordPGP.cmd".
+Restaura el ultimo backup de Vencord que NO contenga el plugin y desactiva el
+plugin en settings.json (conserva tus claves publicas y opciones). Antes guarda
+un safety backup del dist actual.
+
+IMPORTANTE: cierra Discord antes de instalar o desinstalar. El instalador te
+ofrece cerrarlo; si lo dejas abierto, el cliente puede sobrescribir el cambio
+de settings.json y el toggle no quedara activado.
+
+
+LIMITACIONES IMPORTANTES
+------------------------
+- Solo MD (1:1) y grupos MD. Canales de servidor no se tocan.
+- Adjuntos, imagenes, videos y stickers NO se cifran. Solo el texto.
+- Los GIFs y stickers se envian SIN cifrar (solo el GIF/sticker) para que
+  Discord pueda mostrarlos. Si anades texto privado junto a ellos, el envio
+  se CANCELA (fail-closed): quita el texto o desactiva el cifrado.
+- Los MD 1:1 con bots no se cifran (comandos). En un grupo con bot + personas
+  el envio cifrado se CANCELA para no salir en claro.
+- Solo las claves marcadas como verificadas producen "firmado verificado";
+  las no verificadas pueden cifrar pero el envio avisa y no autentican.
+- Los embeds/vistas previas del servidor no existen para el ciphertext.
+- Las menciones no notifican (el servidor no ve el texto claro).
+- Limite de longitud: 2000 caracteres cifrados (4000 con la opcion Nitro).
+- Si falta una clave o el cifrado falla, el envio se cancela y conservas el borrador.
+- Los metadatos de Discord (quien, cuando, tamano) no estan protegidos.
+- No es "seguridad absoluta": malware o una extension maliciosa pueden leer
+  el texto mientras esta descifrado en tu cliente.
+
+
+SI VENCORD SE ACTUALIZA
+-----------------------
+El updater oficial puede reemplazar el build y quitar el plugin.
+Vuelve a ejecutar este instalador (hace backup y reinstala).
+
+
+INTEGRIDAD DEL INSTALADOR
+-------------------------
+El manifiesto SHA-256 detecta corrupcion, no manipulacion: no esta firmado.
+Descarga el ZIP de una fuente de confianza y verifica su hash fuera de banda
+si es posible. La clave privada nunca se envia por red; solo se guarda, si tu
+lo decides, cifrada en el almacen local de este equipo.
+
+
+BACKUPS
+-------
+En %APPDATA%\Vencord:
+  dist.backup-<fecha>                 backup anterior
+  dist.pre-uninstall-<fecha>          safety backup al desinstalar
+  settings\settings.backup-<fecha>.json
+
+Para revertir manualmente: cierra Discord, borra "dist" y renombra el backup
+a "dist". Restaura el JSON de settings si hace falta.
+
+
+LICENCIA
+--------
+El plugin y este instalador se distribuyen bajo GPL-3.0-or-later.
+Vencord es GPL-3.0. Se incluyen los avisos LEGAL del build de Vencord.
