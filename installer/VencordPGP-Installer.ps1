@@ -129,6 +129,23 @@ function Close-RunningDiscord {
     }
 }
 
+function Get-Sha256Hex([string]$Path) {
+    # No usar Get-FileHash: es una funcion del modulo Microsoft.PowerShell.Utility.
+    # Cuando Windows PowerShell 5.1 se lanza desde pwsh 7 (por ejemplo, en un runner
+    # de CI) hereda un PSModulePath con las rutas de PowerShell 7 y esa funcion no
+    # se resuelve ("Get-FileHash is not recognized"). .NET no depende de modulos.
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        $bytes = $sha.ComputeHash($stream)
+        return ([System.BitConverter]::ToString($bytes)).Replace("-", "")
+    } finally {
+        if ($stream) { $stream.Dispose() }
+        $sha.Dispose()
+    }
+}
+
 function Test-Payload {
     $manifestPath = Join-Path $script:Payload "manifest.sha256"
     if (-not (Test-Path $manifestPath)) { throw "Falta manifest.sha256 en el payload." }
@@ -142,7 +159,7 @@ function Test-Payload {
         $name = $matches[2]
         $file = Join-Path $script:Payload $name
         if (-not (Test-Path $file)) { throw "Falta el archivo del payload: $name" }
-        $actual = (Get-FileHash $file -Algorithm SHA256).Hash.ToUpperInvariant()
+        $actual = Get-Sha256Hex $file
         if ($actual -ne $expected) { throw "Hash no coincide para $name (payload corrupto o modificado)." }
         $count++
     }

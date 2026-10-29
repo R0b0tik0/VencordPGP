@@ -52,6 +52,7 @@ There is no signed release pipeline yet.
 - Shell is PowerShell 5.1. `Set-Content -Encoding UTF8` corrupts UTF-8-without-BOM and can add a BOM. Prefer the editor tools; if you rewrite via PowerShell, verify with `node scripts/fix-utf8.mjs <file>`.
 - Installer writes `settings.json` as UTF-8 **without BOM** (a BOM breaks Vencord's JSON parse).
 - A running Discord client overwrites `settings.json` from memory. The installer's normal flow closes Discord first; `-Force` copies files but the setting only sticks after a restart.
+- Never use `Get-FileHash` in the installer/test scripts: it is a *function* from the `Microsoft.PowerShell.Utility` script module, and Windows PowerShell 5.1 launched from `pwsh` 7 (GitHub Actions `windows-latest`) inherits PowerShell 7 module paths, so it fails with `Get-FileHash is not recognized`. `installer/VencordPGP-Installer.ps1` hashes with .NET (`Get-Sha256Hex`). Binary cmdlets (`ConvertFrom-Json`, `Sort-Object`, …) are unaffected.
 
 ## Installer
 - Entrypoints: `Instalar VencordPGP.cmd` / `Desinstalar VencordPGP.cmd` → `installer/VencordPGP-Installer.ps1` (`-Install/-Uninstall/-Silent/-Force/-DryRun/-DiscordRoot/-VencordRoot`).
