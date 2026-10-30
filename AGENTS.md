@@ -18,6 +18,7 @@ There is no signed release pipeline yet.
 - `npm run testTsc` — `tsc --noEmit`.
 - `npm run lint` — NOT ESLint. Runs `scripts/check-no-secrets.mjs` and fails on real private-key blocks / passphrase literals across the tree (skips `node_modules`, `dist`, `pgp-keys`, `installer/payload`, tests).
 - `npm run test:installer` — PowerShell sandbox E2E for the installer; does not touch the real Discord/Vencord install.
+- `npm run wiki:build` — regenerates `wiki/` from `docs/` + `docs/es/` (hand-written index pages are preserved). `npm run wiki:publish` pushes `wiki/` to the GitHub wiki repo.
 
 ## Two copies of the core (critical)
 - `src/*.ts` is NodeNext ESM: relative imports MUST end in `.js`.
@@ -67,6 +68,7 @@ There is no signed release pipeline yet.
 - i18n: in-client strings live in `vencord-plugin/vencordPgp/i18n.ts` (`es` + `en` catalogs, `t(key, vars)`), selected by the `language` setting (`auto|es|en`; auto = Discord locale, non-Spanish falls back to English). `core/` stays Spanish-free of i18n on purpose: `PgpError` messages are translated **by code** in `errorText()`, so never duplicate those texts in components. Adding a UI string means adding it to both catalogs (`en` is typed against `es`, so a missing key fails type-check).
 - The Windows installer has its own `$script:Messages` table (es/en) and a `-Language auto|es|en` switch (auto = Windows UI language); use `T "key" @(args)` for any new message. Keep both tables in sync.
 - Documentation is bilingual (English canonical + Spanish mirror).
+- GitHub wiki: `wiki/` is generated from `docs/` (plus hand-written Home/Inicio, sidebar, footer, architecture and contributing pages). Publish with `scripts/publish-wiki.ps1`; the wiki must be enabled once in the repository settings and needs a first Home page created in the web UI.
 
 ## Repo hygiene
 - `.gitignore` excludes `dist/`, `node_modules/`, `pgp-keys/`, local backups, and `*.zip`; attach `VencordPGP-Installer.zip` to a GitHub Release, do not commit it.
