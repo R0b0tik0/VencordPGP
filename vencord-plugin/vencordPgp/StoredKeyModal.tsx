@@ -5,22 +5,18 @@
  * - Se abre cuando el usuario intenta enviar/editar en una conversacion cifrada
  *   y la clave esta bloqueada (o manualmente desde el panel).
  * - La contrasena de almacenamiento no se guarda nunca.
+ * - Textos via i18n (es/en).
  */
 import type { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, React, showToast } from "@webpack/common";
 
 import { PgpError } from "./core/errors";
+import { errorText, t } from "./i18n";
 import { resetDecryptionCache } from "./render";
 import {
     notifyState, session, setOwnPublicArmor, setPrivateArmorDraft,
 } from "./state";
 import { deleteVault, loadFromVault } from "./vault";
-
-function errorText(e: unknown): string {
-    if (e instanceof PgpError) return e.message;
-    if (e instanceof Error && e.message) return e.message;
-    return "Operacion fallida.";
-}
 
 let pendingRequest: Promise<boolean> | null = null;
 
@@ -88,7 +84,7 @@ function StoredKeyModal({ modalProps, onDone }: {
                 // Clave protegida: pedir la passphrase. Las claves SIN passphrase
                 // se desbloquean arriba con vacio (no llegan aqui).
                 if (e instanceof PgpError && e.code === "PRIVATE_KEY_LOCKED") {
-                    setMessage("Esta clave necesita su passphrase: escribela arriba y pulsa de nuevo.");
+                    setMessage(t("stored.needsPassphrase"));
                     return;
                 }
                 throw e;
@@ -96,7 +92,7 @@ function StoredKeyModal({ modalProps, onDone }: {
             setOwnPublicArmor(session.requireUnlocked().toPublic().armor());
             resetDecryptionCache();
             notifyState();
-            showToast({ text: "PGP: clave cargada y desbloqueada.", variant: "success" });
+            showToast(t("toast.keyLoadedUnlocked"), "success");
             finish(true);
             modalProps.onClose();
         } catch (e) {
@@ -109,7 +105,7 @@ function StoredKeyModal({ modalProps, onDone }: {
     async function removeStored() {
         await deleteVault();
         notifyState();
-        showToast({ text: "PGP: clave guardada eliminada.", variant: "default" });
+        showToast(t("toast.storedKeyDeleted"), "message");
         finish(false);
         modalProps.onClose();
     }
@@ -118,16 +114,16 @@ function StoredKeyModal({ modalProps, onDone }: {
         <Modal
             {...modalProps}
             onClose={close}
-            title="Clave PGP guardada"
-            subtitle="Introduce la contrasena de almacenamiento para cargar y desbloquear tu clave privada."
+            title={t("stored.title")}
+            subtitle={t("stored.subtitle")}
             actions={[
                 {
-                    text: "Ahora no",
+                    text: t("stored.notNow"),
                     variant: "secondary",
                     onClick: close,
                 },
                 {
-                    text: busy ? "Cargando..." : "Cargar y desbloquear",
+                    text: busy ? t("common.loading") : t("stored.load"),
                     variant: "primary",
                     onClick: () => { void load(); },
                     disabled: storagePassword.length === 0 || busy,
@@ -139,25 +135,24 @@ function StoredKeyModal({ modalProps, onDone }: {
                     className="vc-pgp-input"
                     type="password"
                     autoFocus
-                    placeholder="Contrasena de almacenamiento"
+                    placeholder={t("stored.passwordPlaceholder")}
                     value={storagePassword}
                     onChange={e => setStoragePassword(e.currentTarget.value)}
                 />
                 <input
                     className="vc-pgp-input"
                     type="password"
-                    placeholder="Passphrase de la clave (si no se guardo)"
+                    placeholder={t("stored.passphrasePlaceholder")}
                     value={keyPassphrase}
                     onChange={e => setKeyPassphrase(e.currentTarget.value)}
                 />
                 <div className="vc-pgp-modal-note">
-                    La contrasena de almacenamiento no se guarda en ningun sitio. Si la olvidas,
-                    puedes volver a pegar tu clave privada en el PGP Key Manager.
+                    {t("stored.note")}
                 </div>
                 {message && <div className="vc-pgp-msg">{message}</div>}
                 <div className="vc-pgp-row">
                     <button className="vc-pgp-btn vc-pgp-danger" onClick={() => { void removeStored(); }}>
-                        Borrar clave guardada
+                        {t("stored.delete")}
                     </button>
                 </div>
             </div>

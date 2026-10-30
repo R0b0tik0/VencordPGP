@@ -10,7 +10,8 @@ Enter.
 [English](README.md) | **Español**
 
 > Estado: v1 en desarrollo activo. El núcleo criptográfico está cubierto por
-> pruebas; la interfaz dentro del cliente está en español. Lee las
+> pruebas; la interfaz dentro del cliente está en español e inglés (sigue el
+> idioma de Discord por defecto). Lee las
 > [Limitaciones](docs/es/LIMITATIONS.md) y el
 > [Modelo de amenazas](docs/es/THREAT_MODEL.md) antes de confiar en él.
 
@@ -65,7 +66,9 @@ Enter.
 Para desinstalar, ejecuta `Desinstalar VencordPGP.cmd`. Restaura el backup limpio
 más reciente y desactiva el plugin conservando tus claves públicas y opciones.
 
-El instalador y la interfaz del cliente están en español. Para la instalación
+La interfaz del cliente sigue el idioma de Discord (español/inglés) y se puede
+forzar con el ajuste **Language** del plugin. Los mensajes del instalador siguen
+el idioma de Windows y aceptan `-Language es|en`. Para la instalación
 manual desde el código, ver [docs/es/INSTALL.md](docs/es/INSTALL.md).
 
 ## Configuración inicial de claves
@@ -84,7 +87,7 @@ revocación; comparte solo la pública.
 En el plugin:
 
 1. Pega la clave privada y su passphrase en **PGP Key Manager** y pulsa
-   **Desbloquear**.
+   **Desbloquear** (o **Unlock** en inglés; el panel sigue el ajuste **Language**).
 2. Pega la clave pública de tu contacto asociada a su ID numérico de Discord
    (clic derecho en el usuario → **Copiar ID**).
 3. Compara la huella completa por un canal independiente (voz, en persona, otro

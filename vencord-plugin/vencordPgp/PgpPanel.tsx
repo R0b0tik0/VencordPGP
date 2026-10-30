@@ -5,29 +5,35 @@
  * - Passphrase: input type=password, solo RAM de sesión.
  * - Públicas: userId snowflake como PK; nombre solo informativo; huella
  *   completa; verificación manual; multi-clave; import/export/borrado.
+ * - Textos via i18n (es/en, ajuste `language`).
  */
 import { copyWithToast } from "@utils/discord";
 import { React, showToast } from "@webpack/common";
 
-import { PgpError } from "./core/errors";
+import { errorText, t } from "./i18n";
 import { clearDecrypted, resetDecryptionCache } from "./render";
 import {
     decryptCache, getOwnPublicArmor, getPrivateArmorDraft, keyStore,
     notifyState, persistPublicKeys, session, setOwnPublicArmor, setPrivateArmorDraft,
+    subscribeState,
 } from "./state";
 import { deleteVault, hasStoredVault, loadFromVault, saveToVault } from "./vault";
 
-function errorText(e: unknown): string {
-    if (e instanceof PgpError) return e.message;
-    if (e instanceof Error && e.message) return e.message;
-    return "Operacion fallida.";
+/** Renderiza los `<b>...</b>` del catálogo i18n (texto propio, no de usuario). */
+function rich(text: string): React.ReactNode {
+    return text.split(/(<b>[\s\S]*?<\/b>)/g).map((part, i) => {
+        if (part.startsWith("<b>") && part.endsWith("</b>")) {
+            return <b key={i}>{part.slice(3, -4)}</b>;
+        }
+        return part;
+    });
 }
 
 function keyStatus(k: { verified: boolean; revoked: boolean; expired: boolean; }): string {
-    if (k.revoked) return "REVOCADA";
-    if (k.expired) return "CADUCADA";
-    if (k.verified) return "verificada";
-    return "NO verificada";
+    if (k.revoked) return t("common.status.revoked");
+    if (k.expired) return t("common.status.expired");
+    if (k.verified) return t("common.status.verified");
+    return t("common.status.unverified");
 }
 
 export function PgpPanel() {
@@ -39,6 +45,9 @@ export function PgpPanel() {
     const [nick, setNick] = React.useState("");
     const [pubArmor, setPubArmor] = React.useState("");
     const [refresh, force] = React.useReducer((x: number) => x + 1, 0);
+
+    // Repinta al cambiar estado/idioma desde el candado, los modales o los ajustes.
+    React.useEffect(() => subscribeState(force), []);
 
     const users = keyStore.listUsers();
     const ownPublic = getOwnPublicArmor();
@@ -59,7 +68,10 @@ export function PgpPanel() {
         setMessage(null);
         try {
             const armor = privateArmor.trim() || getPrivateArmorDraft().trim();
-            if (!armor) throw new PgpError("VAULT_INVALID", "Carga o pega primero tu clave privada.");
+            if (!armor) {
+                setMessage(t("panel.msg.vaultNeedsKey"));
+                return;
+            }
             const keyPassphrase = passphrase || session.getPassphrase() || "";
             await saveToVault(
                 {
@@ -70,7 +82,7 @@ export function PgpPanel() {
             );
             setHasStored(true);
             setStoragePassword("");
-            setMessage("Clave privada guardada cifrada en este equipo (almacen local).");
+            setMessage(t("panel.msg.saved"));
             notifyState();
         } catch (e) {
             setMessage(errorText(e));
@@ -90,7 +102,7 @@ export function PgpPanel() {
             await session.unlock();
             setOwnPublicArmor(session.requireUnlocked().toPublic().armor());
             setStoragePassword("");
-            setMessage("Clave cargada y desbloqueada desde el almacen cifrado.");
+            setMessage(t("panel.msg.loaded"));
             resetDecryptionCache();
             notifyState();
         } catch (e) {
@@ -102,7 +114,7 @@ export function PgpPanel() {
         await deleteVault();
         setHasStored(false);
         setStoragePassword("");
-        setMessage("Clave guardada eliminada de este equipo.");
+        setMessage(t("panel.msg.deleted"));
     }
 
     async function unlock() {
@@ -115,7 +127,7 @@ export function PgpPanel() {
             const unlocked = session.requireUnlocked();
             setOwnPublicArmor(unlocked.toPublic().armor());
             const fp = unlocked.getFingerprint().toUpperCase();
-            setMessage(`Clave desbloqueada: ${fp.replace(/(.{4})/g, "$1 ").trim()}`);
+            setMessage(t("panel.msg.unlockedFp", { fp: fp.replace(/(.{4})/g, "$1 ").trim() }));
             setPassphrase("");
             setPrivateArmor("");       // no conservar el armor en el estado del panel
             setShowKeyInput(false);
@@ -133,7 +145,7 @@ export function PgpPanel() {
         decryptCache.lock();
         setOwnPublicArmor(null);
         setPassphrase("");
-        setMessage("Clave bloqueada; cache y texto descifrado purgados.");
+        setMessage(t("panel.msg.locked"));
         notifyState();
     }
 
@@ -149,7 +161,7 @@ export function PgpPanel() {
         setPassphrase("");
         persistPublicKeys();
         void deleteVault().then(() => setHasStored(false)).catch(() => { /* noop */ });
-        setMessage("Claves y datos temporales borrados.");
+        setMessage(t("panel.msg.wiped"));
         notifyState();
     }
 
@@ -160,12 +172,10 @@ export function PgpPanel() {
             const entry = await keyStore.addPublicKey(userId, nick || userId, pubArmor);
             persistPublicKeys();
             if (previous.length > 0 && !previous.includes(entry.fingerprint)) {
-                setMessage(
-                    `ADVERTENCIA: nueva clave para ${userId}. Si no la esperabas, verifica la huella por otro canal antes de marcarla como verificada.`
-                );
-                showToast({ text: "PGP: nueva clave para un usuario conocido; verifica la huella.", variant: "critical" });
+                setMessage(t("panel.msg.newKeyWarn", { user: userId }));
+                showToast(t("toast.newKeyKnownUser"), "failure");
             } else {
-                setMessage(`Clave importada: ${entry.fingerprintPretty}`);
+                setMessage(t("panel.msg.imported", { fp: entry.fingerprintPretty }));
             }
             setPubArmor("");
             resetDecryptionCache();
@@ -193,18 +203,21 @@ export function PgpPanel() {
         force();
     }
 
+    const stateText = session.hasArmored
+        ? (session.isUnlocked ? t("panel.state.loadedUnlocked") : t("panel.state.loadedLocked"))
+        : t("panel.state.notLoaded");
+
     return (
         <div className="vc-pgp-panel">
             <div className="vc-pgp-warning">
-                La clave privada permanece <b>solo en memoria</b> por defecto. Opcionalmente puedes
-                guardarla <b>cifrada en este equipo</b> (seccion "Clave guardada") para no pegarla en cada inicio.
-                Nunca se escribe en ajustes ni se sincroniza con la nube.
+                {rich(t("panel.warning"))}
             </div>
 
-            <h3>Clave privada</h3>
+            <h3>{t("panel.privateKeyHeading")}</h3>
             <div className="vc-pgp-note">
-                Estado: <b>{session.hasArmored ? (session.isUnlocked ? "cargada y desbloqueada" : "cargada y bloqueada") : "sin cargar"}</b>.
-                La clave no se muestra aqui por seguridad: vive en memoria (o en el almacen cifrado).
+                {rich(t("panel.stateLine", { state: stateText }))}
+                {" "}
+                {t("panel.stateNote")}
             </div>
             {(!session.hasArmored || showKeyInput) && (
                 <textarea
@@ -225,12 +238,12 @@ export function PgpPanel() {
             <div className="vc-pgp-row">
                 {session.hasArmored && !showKeyInput && (
                     <button className="vc-pgp-btn" onClick={() => setShowKeyInput(true)}>
-                        Reemplazar clave privada
+                        {t("panel.replaceKey")}
                     </button>
                 )}
                 {showKeyInput && session.hasArmored && (
                     <button className="vc-pgp-btn" onClick={() => { setShowKeyInput(false); setPrivateArmor(""); }}>
-                        Cancelar
+                        {t("common.cancel")}
                     </button>
                 )}
             </div>
@@ -238,7 +251,7 @@ export function PgpPanel() {
                 <input
                     className="vc-pgp-input"
                     type="password"
-                    placeholder="Passphrase de la clave (dejala vacia si no tiene)"
+                    placeholder={t("panel.passphrasePlaceholder")}
                     autoComplete="new-password"
                     value={passphrase}
                     onChange={e => setPassphrase(e.currentTarget.value)}
@@ -250,33 +263,31 @@ export function PgpPanel() {
                     onClick={unlock}
                     disabled={!session.hasArmored && !privateArmor.trim()}
                 >
-                    {session.isUnlocked ? "Re-desbloquear" : "Desbloquear"}
+                    {session.isUnlocked ? t("panel.reunlock") : t("panel.unlock")}
                 </button>
-                <button className="vc-pgp-btn" onClick={lock} disabled={!session.hasArmored}>Bloquear clave</button>
-                <button className="vc-pgp-btn vc-pgp-danger" onClick={wipe}>Borrar todo</button>
+                <button className="vc-pgp-btn" onClick={lock} disabled={!session.hasArmored}>{t("panel.lockKey")}</button>
+                <button className="vc-pgp-btn vc-pgp-danger" onClick={wipe}>{t("panel.wipe")}</button>
                 {ownPublic && (
                     <button
                         className="vc-pgp-btn"
-                        onClick={() => void copyWithToast(ownPublic, "Clave publica copiada")}
+                        onClick={() => void copyWithToast(ownPublic, t("common.copyPublicKey"))}
                     >
-                        Copiar mi clave publica
+                        {t("common.copyOwnPublicKey")}
                     </button>
                 )}
             </div>
             {message && <div className="vc-pgp-msg">{message}</div>}
 
-            <h3>Clave guardada (cifrada con contrasena)</h3>
+            <h3>{t("panel.storedHeading")}</h3>
             <p className="vc-pgp-note">
-                Guarda tu clave privada cifrada con una contrasena de almacenamiento para no tener que pegarla
-                en cada inicio. Se guarda <b>solo en este equipo</b> (almacen local de Vencord), nunca en ajustes
-        ni en la nube. La contrasena de almacenamiento <b>no se guarda</b>: la introduces al cargarla.
+                {rich(t("panel.storedNote"))}
             </p>
-            {hasStored && <div className="vc-pgp-msg">Hay una clave guardada en este equipo.</div>}
+            {hasStored && <div className="vc-pgp-msg">{t("panel.storedExists")}</div>}
             <input
                 className="vc-pgp-input"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Contrasena de almacenamiento (min. 8 caracteres)"
+                placeholder={t("panel.storagePasswordPlaceholder")}
                 value={storagePassword}
                 onChange={e => setStoragePassword(e.currentTarget.value)}
             />
@@ -286,40 +297,38 @@ export function PgpPanel() {
                     checked={includePassphrase}
                     onChange={e => setIncludePassphrase(e.currentTarget.checked)}
                 />
-                Guardar tambien la passphrase de la clave (mas comodo; queda protegida por esta contrasena)
+                {t("panel.includePassphrase")}
             </label>
             <div className="vc-pgp-row">
-                <button className="vc-pgp-btn" onClick={() => { void saveVault(); }}>Guardar cifrada</button>
+                <button className="vc-pgp-btn" onClick={() => { void saveVault(); }}>{t("panel.saveEncrypted")}</button>
                 {hasStored && (
                     <button className="vc-pgp-btn" onClick={() => { void loadStoredVault(); }}>
-                        Cargar y desbloquear
+                        {t("panel.loadAndUnlock")}
                     </button>
                 )}
                 {hasStored && (
                     <button className="vc-pgp-btn vc-pgp-danger" onClick={() => { void deleteStoredVault(); }}>
-                        Borrar guardada
+                        {t("panel.deleteStored")}
                     </button>
                 )}
             </div>
 
-            <h3>Claves publicas por usuario</h3>
+            <h3>{t("panel.publicKeysHeading")}</h3>
             <p className="vc-pgp-note">
-                Usa el <b>ID de Discord</b> (clic derecho → Copiar ID), no el nombre. El nombre es solo informativo.
-                Verifica la huella por un canal independiente antes de marcarla como verificada.
+                {rich(t("panel.publicKeysNoteId"))}
             </p>
             <p className="vc-pgp-note">
-                Atajo: en un MD, <b>clic derecho</b> en el candado de la barra de chat asigna la clave del destinatario;
-                <b> clic izquierdo</b> activa/desactiva el cifrado en esa conversacion.
+                {rich(t("panel.publicKeysNoteShortcut"))}
             </p>
             <input
                 className="vc-pgp-input"
-                placeholder="User ID (snowflake, solo digitos)"
+                placeholder={t("panel.userIdPlaceholder")}
                 value={userId}
                 onChange={e => setUserId(e.currentTarget.value)}
             />
             <input
                 className="vc-pgp-input"
-                placeholder="Nombre visible (informativo)"
+                placeholder={t("panel.nickPlaceholder")}
                 value={nick}
                 onChange={e => setNick(e.currentTarget.value)}
             />
@@ -332,15 +341,15 @@ export function PgpPanel() {
                 onChange={e => setPubArmor(e.currentTarget.value)}
             />
             <div className="vc-pgp-row">
-                <button className="vc-pgp-btn" onClick={addPublicKey}>Añadir / sustituir</button>
+                <button className="vc-pgp-btn" onClick={addPublicKey}>{t("panel.addOrReplace")}</button>
             </div>
 
-            {users.length === 0 && <p className="vc-pgp-note">Aún no hay claves publicas asignadas.</p>}
+            {users.length === 0 && <p className="vc-pgp-note">{t("panel.noKeys")}</p>}
             {users.map(u => (
                 <div className="vc-pgp-user" key={u.userId}>
                     <div className="vc-pgp-user-head">
                         <strong>{u.userId}</strong>
-                        <span className="vc-pgp-muted"> ({u.displayName || "sin nombre"})</span>
+                        <span className="vc-pgp-muted"> ({u.displayName || t("common.unnamed")})</span>
                     </div>
                     {u.keys.map(k => (
                         <div className="vc-pgp-key" key={k.fingerprint}>
@@ -350,27 +359,27 @@ export function PgpPanel() {
                             </span>
                             <button
                                 className="vc-pgp-btn vc-pgp-small"
-                                onClick={() => void copyWithToast(k.fingerprintPretty, "Huella copiada")}
+                                onClick={() => void copyWithToast(k.fingerprintPretty, t("common.copyFingerprint"))}
                             >
-                                Copiar huella
+                                {t("common.copyFingerprintButton")}
                             </button>
                             <button
                                 className="vc-pgp-btn vc-pgp-small"
-                                onClick={() => void copyWithToast(k.armored, "Clave publica copiada")}
+                                onClick={() => void copyWithToast(k.armored, t("common.copyPublicKey"))}
                             >
-                                Exportar
+                                {t("common.export")}
                             </button>
                             <button
                                 className="vc-pgp-btn vc-pgp-small"
                                 onClick={() => toggleVerified(u.userId, k.fingerprint, !k.verified)}
                             >
-                                {k.verified ? "Desmarcar" : "Marcar verificada"}
+                                {k.verified ? t("common.unmarkVerified") : t("common.markVerified")}
                             </button>
                             <button
                                 className="vc-pgp-btn vc-pgp-small vc-pgp-danger"
                                 onClick={() => removeKey(u.userId, k.fingerprint)}
                             >
-                                Eliminar
+                                {t("common.delete")}
                             </button>
                         </div>
                     ))}

@@ -8,8 +8,8 @@ The message arrived encrypted (that part is working). If you do not see the
 plaintext, one of these is true:
 
 1. **Your private key is locked.**
-   - Look for a red badge with a lock: `PGP locked` (in Spanish,
-     `PGP bloqueado · clic para desbloquear`).
+   - Look for a red badge with a lock: `PGP locked · click to unlock` (in
+     Spanish, `PGP bloqueado · clic para desbloquear`).
    - Fix it in **Settings → Vencord → Plugins → VencordPGP → PGP Key Manager**:
      paste your private key (**Replace private key**) and its passphrase
      (**leave it empty if your key has none**) → **Unlock**. Or save the key

@@ -13,6 +13,7 @@ import { ChannelStore, Parser, React, ReactDOM, SelectedChannelStore, showToast 
 
 import { isSupportedChannel } from "./core/channelPolicy";
 import { isPgpTransport } from "./core/transport";
+import { t } from "./i18n";
 import { decryptMessage, getLocalPlaintext, isLocallyDecrypted } from "./render";
 import { decryptCache, getStateVersion, session, subscribeState } from "./state";
 import { requestStoredKeyUnlock } from "./StoredKeyModal";
@@ -21,10 +22,10 @@ import { hasStoredVault } from "./vault";
 function signatureLabel(message: Message): string {
     const entry = decryptCache.get(message.id, message.editedTimestamp?.getTime() ?? null);
     if (!entry || entry.body === undefined) return "";
-    if (!entry.signed) return " · sin firma";
-    if (entry.signatureValid === true) return " · ✓ firmado verificado";
-    if (entry.signatureValid === false) return " · ⚠ FIRMA INVÁLIDA";
-    return " · firmado (sin verificar)";
+    if (!entry.signed) return t("msg.noSignature");
+    if (entry.signatureValid === true) return t("msg.signedVerified");
+    if (entry.signatureValid === false) return t("msg.badSignature");
+    return t("msg.signedUnverified");
 }
 
 function parseBody(body: string, message: Message) {
@@ -127,7 +128,7 @@ export function PgpAccessory({ message }: { message: Message; }) {
         try {
             if (await hasStoredVault()) {
                 const ok = await requestStoredKeyUnlock();
-                if (ok) showToast({ text: "PGP: clave desbloqueada.", variant: "success" });
+                if (ok) showToast(t("toast.keyUnlocked"), "success");
             } else {
                 const self = plugins["VencordPGP"];
                 if (self) openPluginModal(self);
@@ -141,25 +142,25 @@ export function PgpAccessory({ message }: { message: Message; }) {
         if (!session.isUnlocked) {
             return (
                 <button className="vc-pgp-badge vc-pgp-badge-error vc-pgp-unlock" onClick={() => { void onUnlockClick(); }}>
-                    🔒 PGP bloqueado · clic para desbloquear
+                    {t("msg.lockedBadge")}
                 </button>
             );
         }
         const entry = decryptCache.get(message.id, message.editedTimestamp?.getTime() ?? null);
         if (entry?.error) {
-            return <span className="vc-pgp-badge vc-pgp-badge-error">🔒 Mensaje PGP no descifrable</span>;
+            return <span className="vc-pgp-badge vc-pgp-badge-error">{t("msg.undecryptable")}</span>;
         }
 
         const plaintext = getLocalPlaintext(message.id) ?? entry?.body;
         if (plaintext === undefined) {
-            return <span className="vc-pgp-badge vc-pgp-badge-muted">🔒 Descifrando PGP…</span>;
+            return <span className="vc-pgp-badge vc-pgp-badge-muted">{t("msg.decrypting")}</span>;
         }
 
         if (revealed) {
             return (
                 <div className="vc-pgp-plain-foot">
-                    <span className="vc-pgp-badge-mini">🔒 texto cifrado</span>
-                    <button className="vc-pgp-link" onClick={() => setRevealed(false)}>ver descifrado</button>
+                    <span className="vc-pgp-badge-mini">{t("msg.cipherBadge")}</span>
+                    <button className="vc-pgp-link" onClick={() => setRevealed(false)}>{t("msg.showPlain")}</button>
                 </div>
             );
         }
@@ -175,7 +176,7 @@ export function PgpAccessory({ message }: { message: Message; }) {
                     <span className={entry?.signatureValid === false ? "vc-pgp-badge-mini vc-pgp-bad-sig" : "vc-pgp-badge-mini"}>
                         🔒 PGP{signatureLabel(message)}
                     </span>
-                    <button className="vc-pgp-link" onClick={() => setRevealed(true)}>ver cifrado</button>
+                    <button className="vc-pgp-link" onClick={() => setRevealed(true)}>{t("msg.showCipher")}</button>
                 </div>
             </>
         );

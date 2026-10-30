@@ -44,6 +44,7 @@ Discord afterwards.
 .\installer\VencordPGP-Installer.ps1 -Install -Silent -Force
 .\installer\VencordPGP-Installer.ps1 -Uninstall -Silent
 .\installer\VencordPGP-Installer.ps1 -Install -Silent -DryRun -Force
+.\installer\VencordPGP-Installer.ps1 -Install -Silent -Language en
 .\installer\VencordPGP-Installer.ps1 -Install -DiscordRoot <path> -VencordRoot <path>
 ```
 
@@ -53,6 +54,7 @@ Discord afterwards.
 | `-Silent` | No questions (requires `-Install` or `-Uninstall`) |
 | `-Force` | Continue even if Discord is running; does not close it |
 | `-DryRun` | Show what would happen without writing anything |
+| `-Language auto\|es\|en` | Message language (`auto` = Windows UI language; anything but Spanish uses English) |
 | `-DiscordRoot` / `-VencordRoot` | Override detection (tests/sandbox) |
 
 ## Backups
@@ -125,7 +127,8 @@ download out of band.
   in the local vault, never in synced settings. See [Key management](KEYS.md).
 - Windows may ask for confirmation when running a `.cmd`. It is a text script;
   you can open it in Notepad to review it.
-- The installer messages are in Spanish in v1.
+- Installer messages follow the Windows UI language (Spanish or English) and can
+  be forced with `-Language es|en`; the `.cmd` launchers pass flags through.
 - Vencord is GPL-3.0. The payload was built from Vencord 1.15.11 (commit
   `32c9063`) plus this plugin's source. Both are publicly available; the Vencord
   license and legal notices are included in `installer/`.

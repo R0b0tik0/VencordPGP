@@ -10,7 +10,8 @@ Enter.
 **English** | [Español](README.es.md)
 
 > Status: v1, actively developed. The cryptographic core is covered by tests;
-> the in-client UI strings are currently in Spanish. Read
+> the in-client UI is available in English and Spanish (it follows Discord's
+> language by default). Read
 > [Limitations](docs/LIMITATIONS.md) and the [Threat model](docs/THREAT_MODEL.md)
 > before relying on it.
 
@@ -64,7 +65,9 @@ Enter.
 To uninstall, run `Desinstalar VencordPGP.cmd`. It restores the newest clean
 backup and disables the plugin while keeping your public keys and options.
 
-The installer and the in-client UI are currently in Spanish. See
+The in-client UI follows Discord's language (English/Spanish) and can be forced
+with the **Language** setting in the plugin. The installer messages follow the
+Windows UI language and accept `-Language en|es`. See
 [docs/INSTALL.md](docs/INSTALL.md) for the manual/source installation.
 
 ## First-time key setup
@@ -83,7 +86,8 @@ revocation certificate safe; share only the public key.
 In the plugin:
 
 1. Paste the private key and its passphrase in **PGP Key Manager** and click
-   **Unlock**. The panel is in Spanish (`Desbloquear`).
+   **Unlock** (`Desbloquear` in Spanish; the panel follows the **Language**
+   setting).
 2. Paste your contact's public key, bound to their numeric Discord user ID
    (right-click a user → **Copy User ID**).
 3. Compare the full fingerprint over a separate channel (voice, in person,

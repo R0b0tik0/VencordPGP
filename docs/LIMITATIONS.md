@@ -56,8 +56,11 @@ Read this before using VencordPGP with anything sensitive.
   path.
 - **Compatibility:** only clients with the plugin and the right keys see the
   plaintext. Everyone else sees the `[VPGP:v1]` block.
-- **Language:** the in-client UI and the Windows installer are in Spanish in v1.
-  The documentation is available in English and Spanish.
+- **Language:** the in-client UI and the Windows installer support English and
+  Spanish. Both default to the detected language (Discord / Windows) and can be
+  forced (`language` setting, `-Language` flag). Only those two are translated;
+  other languages fall back to English. The documentation is available in
+  English and Spanish.
 - **No custom cryptography:** only `openpgp` (RFC 9580) and WebCrypto are used.
   There is no keyserver or network access.
 

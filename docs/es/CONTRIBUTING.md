@@ -68,6 +68,16 @@ npm run test:installer  # E2E del instalador de Windows (sandbox)
 - Todo comportamiento nuevo que pueda fallar debe fallar cerrado y conservar el
   borrador del usuario.
 
+## Textos de interfaz (i18n)
+
+- Los textos del cliente viven en `vencord-plugin/vencordPgp/i18n.ts`. Añade cada
+  texto nuevo a los catálogos `es` y `en`; `en` está tipado contra `es`, así que
+  una clave que falte rompe el type-check.
+- `core/` no contiene textos de interfaz: los mensajes de `PgpError` se traducen
+  por código de error en `errorText()`. No dupliques esos textos en componentes.
+- El instalador de Windows guarda sus mensajes en `$script:Messages` (`es`/`en`) y
+  usa `T "key" @(args)`. Mantén ambas tablas sincronizadas.
+
 ## Documentación
 
 - **El inglés es el idioma canónico.** Cada documento de usuario tiene una

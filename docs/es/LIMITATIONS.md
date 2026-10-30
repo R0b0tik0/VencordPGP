@@ -55,8 +55,11 @@ Léelo antes de usar VencordPGP con información sensible.
   fail-closed.
 - **Compatibilidad:** solo los clientes con el plugin y las claves correctas ven
   el claro. El resto ve el bloque `[VPGP:v1]`.
-- **Idioma:** la interfaz del cliente y el instalador de Windows están en español
-  en v1. La documentación está en inglés y español.
+- **Idioma:** la interfaz del cliente y el instalador de Windows admiten español
+  e inglés. Ambos usan por defecto el idioma detectado (Discord / Windows) y se
+  pueden forzar (ajuste `language`, parámetro `-Language`). Solo esos dos
+  idiomas están traducidos; el resto cae a inglés. La documentación está en
+  inglés y español.
 - **Sin criptografía casera:** solo se usan `openpgp` (RFC 9580) y WebCrypto. No
   hay keyservers ni acceso a red.
 

@@ -3,26 +3,21 @@
  * directamente desde el candado de la barra de chat (clic derecho).
  *
  * Solo se guardan claves publicas. La privada nunca se toca aqui.
+ * Textos via i18n (es/en).
  */
 import { copyWithToast } from "@utils/discord";
 import type { Channel, RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, React, showToast } from "@webpack/common";
 
-import { PgpError } from "./core/errors";
+import { errorText, t } from "./i18n";
 import { getDmRecipients, type DmRecipient } from "./dm";
 import { resetDecryptionCache } from "./render";
 import { getOwnPublicArmor, keyStore, notifyState, persistPublicKeys, subscribeState } from "./state";
 
-function errorText(e: unknown): string {
-    if (e instanceof PgpError) return e.message;
-    if (e instanceof Error && e.message) return e.message;
-    return "Operacion fallida.";
-}
-
 export function openAssignKeyModal(channel: Channel, initialUserId?: string): void {
     const recipients = getDmRecipients(channel);
     if (recipients.length === 0) {
-        showToast({ text: "PGP: esta conversacion no tiene destinatarios.", variant: "critical" });
+        showToast(t("toast.noRecipients"), "failure");
         return;
     }
     openModal(modalProps => (
@@ -65,12 +60,13 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
             notifyState();
             setArmor("");
             if (previous.length > 0 && !previous.includes(entry.fingerprint)) {
-                setMessage(
-                    `ADVERTENCIA: clave nueva para ${recipient.name}. Verifica la huella (${entry.fingerprintPretty}) por otro canal antes de marcarla como verificada.`
-                );
-                showToast({ text: "PGP: nueva clave para un usuario conocido; verifica la huella.", variant: "critical" });
+                setMessage(t("assign.newKeyWarn", {
+                    name: recipient.name,
+                    fp: entry.fingerprintPretty,
+                }));
+                showToast(t("toast.newKeyKnownUser"), "failure");
             } else {
-                setMessage(`Clave guardada: ${entry.fingerprintPretty}`);
+                setMessage(t("assign.saved", { fp: entry.fingerprintPretty }));
             }
         } catch (e) {
             setMessage(errorText(e));
@@ -96,25 +92,25 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
 
     async function copyOwnPublic() {
         if (!ownPublic) {
-            setMessage("Desbloquea tu clave privada para copiar tu clave publica.");
+            setMessage(t("assign.unlockToCopy"));
             return;
         }
-        await copyWithToast(ownPublic, "Clave publica copiada");
+        await copyWithToast(ownPublic, t("common.copyPublicKey"));
     }
 
     return (
         <Modal
             {...modalProps}
-            title="Claves PGP del MD"
-            subtitle="Asigna la clave publica de cada destinatario. Nunca se comparte tu clave privada."
+            title={t("assign.title")}
+            subtitle={t("assign.subtitle")}
             actions={[
                 {
-                    text: "Cerrar",
+                    text: t("common.close"),
                     variant: "secondary",
                     onClick: modalProps.onClose,
                 },
                 {
-                    text: saving ? "Guardando..." : "Guardar clave",
+                    text: saving ? t("common.saving") : t("assign.save"),
                     variant: "primary",
                     onClick: () => { void save(); },
                     disabled: !armor.trim() || saving,
@@ -124,7 +120,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
             <div className="vc-pgp-modal">
                 {recipients.length > 1 && (
                     <section>
-                        <div className="vc-pgp-modal-label">Destinatario</div>
+                        <div className="vc-pgp-modal-label">{t("assign.recipient")}</div>
                         <select
                             className="vc-pgp-select"
                             value={selected}
@@ -136,7 +132,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                         >
                             {recipients.map(r => (
                                 <option value={r.id} key={r.id}>
-                                    {r.name} · {keyStore.getEncryptionArmors(r.id).length ? "clave OK" : "sin clave"}
+                                    {r.name} · {keyStore.getEncryptionArmors(r.id).length ? t("assign.keyOk") : t("assign.noKey")}
                                 </option>
                             ))}
                         </select>
@@ -144,12 +140,12 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                 )}
 
                 <div className="vc-pgp-modal-note">
-                    Usuario: <b>{recipient.name}</b> · ID <code>{recipient.id}</code>
+                    {t("assign.userLabel")} <b>{recipient.name}</b> · ID <code>{recipient.id}</code>
                 </div>
 
                 {keys.length === 0 && (
                     <div className="vc-pgp-modal-warn">
-                        Sin clave publica para este usuario. Los mensajes cifrados no se podran enviar hasta que la añadas.
+                        {t("assign.noPublicKeyWarn")}
                     </div>
                 )}
 
@@ -157,31 +153,37 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                     <div className="vc-pgp-modal-key" key={k.fingerprint}>
                         <code className="vc-pgp-fingerprint">{k.fingerprintPretty}</code>
                         <span className={k.verified && !k.revoked && !k.expired ? "vc-pgp-ok" : "vc-pgp-warn"}>
-                            {k.revoked ? "REVOCADA" : k.expired ? "CADUCADA" : k.verified ? "verificada" : "NO verificada"}
+                            {k.revoked
+                                ? t("common.status.revoked")
+                                : k.expired
+                                    ? t("common.status.expired")
+                                    : k.verified
+                                        ? t("common.status.verified")
+                                        : t("common.status.unverified")}
                         </span>
                         <button
                             className="vc-pgp-btn vc-pgp-small"
-                            onClick={() => void copyWithToast(k.fingerprintPretty, "Huella copiada")}
+                            onClick={() => void copyWithToast(k.fingerprintPretty, t("common.copyFingerprint"))}
                         >
-                            Copiar huella
+                            {t("common.copyFingerprintButton")}
                         </button>
                         <button
                             className="vc-pgp-btn vc-pgp-small"
                             onClick={() => toggleVerified(k.fingerprint, !k.verified)}
                         >
-                            {k.verified ? "Desmarcar" : "Marcar verificada"}
+                            {k.verified ? t("common.unmarkVerified") : t("common.markVerified")}
                         </button>
                         <button
                             className="vc-pgp-btn vc-pgp-small vc-pgp-danger"
                             onClick={() => removeKey(k.fingerprint)}
                         >
-                            Eliminar
+                            {t("common.delete")}
                         </button>
                     </div>
                 ))}
 
                 <section>
-                    <div className="vc-pgp-modal-label">Añadir / sustituir clave publica</div>
+                    <div className="vc-pgp-modal-label">{t("assign.addOrReplaceHeading")}</div>
                     <textarea
                         className="vc-pgp-textarea"
                         rows={6}
@@ -194,15 +196,14 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
 
                 <div className="vc-pgp-row">
                     <button className="vc-pgp-btn" onClick={() => { void copyOwnPublic(); }}>
-                        Copiar mi clave publica
+                        {t("common.copyOwnPublicKey")}
                     </button>
                 </div>
 
                 {message && <div className="vc-pgp-msg">{message}</div>}
 
                 <div className="vc-pgp-modal-note">
-                    Compara la huella por voz o en persona antes de marcarla como verificada.
-                    El cifrado no autentica por si solo al remitente.
+                    {t("assign.footerNote")}
                 </div>
             </div>
         </Modal>

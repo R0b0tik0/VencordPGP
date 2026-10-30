@@ -8,7 +8,8 @@ El mensaje llegó cifrado (esa parte funciona). Si no ves el claro, ocurre una d
 estas cosas:
 
 1. **Tu clave privada está bloqueada.**
-   - Busca un badge rojo: `PGP bloqueado · clic para desbloquear`.
+   - Busca un badge rojo: `PGP bloqueado · clic para desbloquear` (en inglés,
+     `PGP locked · click to unlock`).
    - Solución: **Ajustes → Vencord → Plugins → VencordPGP → PGP Key Manager**:
      pega tu clave privada (**Reemplazar clave privada**) y su passphrase
      (**déjala vacía si tu clave no tiene**) → **Desbloquear**. O guarda la clave

@@ -64,7 +64,9 @@ There is no signed release pipeline yet.
 - Behavior/limits: `docs/LIMITATIONS.md`, `docs/THREAT_MODEL.md`, `docs/TRANSPORT.md`, `docs/TROUBLESHOOTING.md`.
 - Ops: `docs/INSTALL.md` (installer + source build), `docs/INSTALLER.md` (installer internals/options), `docs/KEYS.md`.
 - Security: `docs/SECURITY.md` (reporting + open hardening items). `CONTRIBUTING.md` (workflow, two-copy rule, docs policy).
-- In-client UI strings and the Windows installer messages are Spanish in v1; the documentation is bilingual.
+- i18n: in-client strings live in `vencord-plugin/vencordPgp/i18n.ts` (`es` + `en` catalogs, `t(key, vars)`), selected by the `language` setting (`auto|es|en`; auto = Discord locale, non-Spanish falls back to English). `core/` stays Spanish-free of i18n on purpose: `PgpError` messages are translated **by code** in `errorText()`, so never duplicate those texts in components. Adding a UI string means adding it to both catalogs (`en` is typed against `es`, so a missing key fails type-check).
+- The Windows installer has its own `$script:Messages` table (es/en) and a `-Language auto|es|en` switch (auto = Windows UI language); use `T "key" @(args)` for any new message. Keep both tables in sync.
+- Documentation is bilingual (English canonical + Spanish mirror).
 
 ## Repo hygiene
 - `.gitignore` excludes `dist/`, `node_modules/`, `pgp-keys/`, local backups, and `*.zip`; attach `VencordPGP-Installer.zip` to a GitHub Release, do not commit it.

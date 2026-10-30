@@ -63,6 +63,16 @@ npm run test:installer  # Windows installer E2E (sandbox)
 - Never log plaintext, private keys, passphrases, or decrypted message bodies.
 - New behavior that can fail must fail closed and preserve the user's draft.
 
+## UI strings (i18n)
+
+- In-client text lives in `vencord-plugin/vencordPgp/i18n.ts`. Add every new
+  string to both the `es` and `en` catalogs; `en` is typed against `es`, so a
+  missing key fails type-check.
+- `core/` carries no UI text: `PgpError` messages are translated by error code
+  in `errorText()`. Do not duplicate those texts in components.
+- The Windows installer keeps its messages in `$script:Messages` (`es`/`en`) and
+  uses `T "key" @(args)`. Keep both tables in sync.
+
 ## Documentation
 
 - **English is the canonical language.** Every user-facing document has an

@@ -9,6 +9,7 @@ dentro de tu Vencord. Antes de tocar nada hace backup de:
   - %APPDATA%\Vencord\settings\settings.json
 
 Verifica la integridad del payload con SHA-256 y activa el plugin.
+Los mensajes del instalador y la interfaz del plugin estan en espanol e ingles.
 
 
 REQUISITOS
@@ -30,16 +31,32 @@ COMO USARLO
 Preguntas: como maximo 2-3 (cerrar Discord, confirmar, abrir). Nada mas.
 
 
+IDIOMA
+------
+Mensajes del instalador: espanol e ingles, detectado por el idioma de Windows.
+Para forzarlo, pasa el parametro al .cmd:
+  Instalar VencordPGP.cmd -Language es
+  Instalar VencordPGP.cmd -Language en
+  Instalar VencordPGP.cmd -Language auto      (por defecto)
+El mismo parametro funciona con "Desinstalar VencordPGP.cmd".
+
+Interfaz del plugin: Ajustes > Vencord > Plugins > VencordPGP > Language.
+  Auto (por defecto) sigue el idioma de Discord y usa ingles si Discord no
+  esta en espanol. Opciones: Auto / Espanol / English. Se aplica al momento.
+
+
 DESPUES DE INSTALAR
 -------------------
 1. Abre Discord > Ajustes > Vencord > Plugins > VencordPGP.
-2. Pega tu clave privada PGP y la passphrase, y pulsa "Desbloquear".
+2. Pega tu clave privada PGP y la passphrase, y pulsa "Desbloquear" (o
+   "Unlock" si la interfaz esta en ingles).
    La clave privada vive SOLO en memoria por defecto: no se sincroniza ni se
    envia a ningun servidor. Al cerrar Discord tendras que pegarla otra vez.
    Opcionalmente puedes guardarla CIFRADA en este equipo (vault local con
-   contrasena, PBKDF2 + AES-256-GCM); ver "Clave guardada" en el PGP Key
-   Manager. En v1 ese vault tambien guarda la passphrase de la clave por
-   defecto: desmarca la casilla si no quieres guardarla.
+   contrasena, PBKDF2 + AES-256-GCM) desde el menu del boton de candado,
+   "Guardar mi clave privada cifrada...". En v1 ese vault tambien guarda la
+   passphrase de la clave por defecto: desmarca la casilla si no quieres
+   guardarla.
 3. Anade la clave publica de la otra persona con su ID de Discord
    (clic derecho > Copiar ID). El nombre es solo informativo.
 4. Compara la huella digital por un canal independiente (voz, en persona)

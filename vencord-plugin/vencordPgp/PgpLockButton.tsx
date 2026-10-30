@@ -11,6 +11,7 @@
  *
  * Estado visual: cerrado verde = cifrado activo; abierto = desactivado;
  * amarillo con punto = activo pero faltan claves.
+ * Textos via i18n (es/en).
  */
 import { ChatBarButton, type ChatBarButtonFactory } from "@api/ChatButtons";
 import { plugins } from "@api/PluginManager";
@@ -20,6 +21,7 @@ import { ContextMenuApi, Menu, React, showToast, UserStore } from "@webpack/comm
 import { openAssignKeyModal } from "./AssignKeyModal";
 import { resolveEncryptionEnabled } from "./core/channelPolicy";
 import { getDmRecipients, isDmChannel } from "./dm";
+import { t } from "./i18n";
 import { LockIcon, UnlockIcon } from "./icons";
 import { clearDecrypted } from "./render";
 import { openSaveVaultModal } from "./SaveVaultModal";
@@ -40,7 +42,7 @@ type Props = Parameters<ChatBarButtonFactory>[0] & { settings: PgpSettingsLike; 
 export function PgpLockButton({ channel, isMainChat, settings }: Props) {
     const [, force] = React.useReducer((x: number) => x + 1, 0);
     React.useEffect(() => subscribeState(force), []);
-    settings.use(["pgpEnabled", "autoEncryptDMs", "channelOverrides"]);
+    settings.use(["pgpEnabled", "autoEncryptDMs", "channelOverrides", "language"]);
 
     if (!isMainChat || !isDmChannel(channel)) return null;
 
@@ -64,16 +66,16 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
 
     const names = recipients.map(r => r.name).join(", ");
     const tooltip = !globalOn
-        ? "PGP desactivado globalmente. Activalo en Ajustes > Vencord > Plugins > VencordPGP."
+        ? t("lock.tooltip.globallyOff")
         : botOnly
-            ? `Bot (${names}): los mensajes con bots no se cifran.`
+            ? t("lock.tooltip.botOnly", { names })
             : hasBot
-                ? `PGP activo, pero la conversacion incluye un bot: el envio cifrado se cancela.`
+                ? t("lock.tooltip.hasBot")
                 : state === "missing"
-                    ? `PGP activo pero faltan claves para ${missing.map(r => r.name).join(", ")}. Clic: desactivar. Clic derecho: menu.`
+                    ? t("lock.tooltip.missing", { names: missing.map(r => r.name).join(", ") })
                     : state === "on"
-                        ? `PGP cifrado activo (${names}). Clic: desactivar. Clic derecho: menu.`
-                        : `PGP desactivado (${names}). Clic: activar. Clic derecho: menu.`;
+                        ? t("lock.tooltip.on", { names })
+                        : t("lock.tooltip.off", { names });
 
     function setOverride(mode: "on" | "off") {
         settings.store.channelOverrides = { ...overrides, [channel.id]: mode };
@@ -82,33 +84,30 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
 
     function onToggle() {
         if (!globalOn) {
-            showToast({ text: "PGP: esta desactivado globalmente. Activalo en Ajustes > Vencord > Plugins > VencordPGP.", variant: "critical" });
+            showToast(t("toast.globallyDisabled"), "failure");
             return;
         }
         if (botOnly) {
-            showToast({ text: "PGP: los mensajes con bots no se cifran.", variant: "default" });
+            showToast(t("toast.botNoEncrypt"), "message");
             return;
         }
         if (desired) {
             setOverride("off");
-            showToast({ text: "PGP: cifrado desactivado en esta conversacion.", variant: "default" });
+            showToast(t("toast.encryptionOffChannel"), "message");
             return;
         }
         if (hasBot) {
-            showToast({ text: "PGP: no se puede cifrar un grupo con bots. Quita el bot o deja el cifrado desactivado.", variant: "critical" });
+            showToast(t("toast.botGroupCannotEncrypt"), "failure");
             return;
         }
 
         setOverride("on");
         const stillMissing = recipients.filter(r => keyStore.getEncryptionArmors(r.id).length === 0);
         if (stillMissing.length > 0) {
-            showToast({
-                text: `PGP: cifrado activado, pero faltan claves para ${stillMissing.map(r => r.name).join(", ")}.`,
-                variant: "critical",
-            });
+            showToast(t("toast.encryptionOnMissing", { users: stillMissing.map(r => r.name).join(", ") }), "failure");
             openAssignKeyModal(channel, stillMissing[0].id);
         } else {
-            showToast({ text: "PGP: cifrado activado en esta conversacion.", variant: "success" });
+            showToast(t("toast.encryptionOn"), "success");
         }
     }
 
@@ -116,7 +115,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         if (await hasStoredVault()) {
             openStoredKeyModal();
         } else {
-            showToast({ text: "PGP: no hay ninguna clave privada guardada en este equipo.", variant: "critical" });
+            showToast(t("toast.noStoredKey"), "failure");
         }
     }
 
@@ -126,7 +125,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         decryptCache.lock();
         setOwnPublicArmor(null);
         notifyState();
-        showToast({ text: "PGP: clave privada bloqueada.", variant: "default" });
+        showToast(t("toast.keyLocked"), "message");
     }
 
     function openManager() {
@@ -148,31 +147,31 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
             >
                 <Menu.MenuItem
                     id="vc-pgp-recipient-keys"
-                    label="Clave publica del destinatario..."
+                    label={t("lock.menu.recipientKeys")}
                     action={() => openAssignKeyModal(channel)}
                 />
                 <Menu.MenuItem
                     id="vc-pgp-save-vault"
-                    label="Guardar mi clave privada cifrada..."
+                    label={t("lock.menu.saveVault")}
                     disabled={!hasPrivateKey}
                     action={() => openSaveVaultModal()}
                 />
                 <Menu.MenuItem
                     id="vc-pgp-load-vault"
-                    label="Cargar clave privada guardada..."
+                    label={t("lock.menu.loadVault")}
                     action={() => { void loadStoredKey(); }}
                 />
                 <Menu.MenuSeparator />
                 {session.isUnlocked && (
                     <Menu.MenuItem
                         id="vc-pgp-lock-key"
-                        label="Bloquear clave privada"
+                        label={t("lock.menu.lockKey")}
                         action={lockKey}
                     />
                 )}
                 <Menu.MenuItem
                     id="vc-pgp-open-manager"
-                    label="Abrir PGP Key Manager"
+                    label={t("common.openManager")}
                     action={openManager}
                 />
             </Menu.Menu>

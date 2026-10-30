@@ -5,6 +5,7 @@
  * Cifrado: PBKDF2-SHA256 + AES-256-GCM (WebCrypto). La contrasena de
  * almacenamiento no se guarda. Opcionalmente guarda tambien la passphrase de
  * la clave (si esta en memoria), para cargar y desbloquear con una sola.
+ * Textos via i18n (es/en).
  */
 import { plugins } from "@api/PluginManager";
 import { openPluginModal } from "@components/settings";
@@ -12,6 +13,7 @@ import type { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, React, showToast } from "@webpack/common";
 
 import { PgpError } from "./core/errors";
+import { errorText, t } from "./i18n";
 import { getPrivateArmorDraft, session } from "./state";
 import { saveToVault } from "./vault";
 
@@ -32,15 +34,15 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
 
     async function save() {
         if (!armor) {
-            setMessage("Carga primero tu clave privada en PGP Key Manager.");
+            setMessage(t("save.needsKey"));
             return;
         }
         if (password.length < 8) {
-            setMessage("La contrasena de almacenamiento debe tener al menos 8 caracteres.");
+            setMessage(t("save.tooShort"));
             return;
         }
         if (password !== confirm) {
-            setMessage("Las contrasenas no coinciden.");
+            setMessage(t("save.mismatch"));
             return;
         }
 
@@ -54,10 +56,10 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                 },
                 password
             );
-            showToast({ text: "PGP: clave privada guardada cifrada en este equipo.", variant: "success" });
+            showToast(t("toast.privateKeySaved"), "success");
             modalProps.onClose();
         } catch (e) {
-            setMessage(e instanceof PgpError ? e.message : "No se pudo guardar la clave privada.");
+            setMessage(e instanceof PgpError ? errorText(e) : t("save.failed"));
         } finally {
             setBusy(false);
         }
@@ -72,16 +74,16 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
     return (
         <Modal
             {...modalProps}
-            title="Guardar clave privada cifrada"
-            subtitle="Se guarda solo en este equipo, cifrada con una contrasena que eliges. La contrasena no se guarda."
+            title={t("save.title")}
+            subtitle={t("save.subtitle")}
             actions={[
                 {
-                    text: "Cancelar",
+                    text: t("common.cancel"),
                     variant: "secondary",
                     onClick: modalProps.onClose,
                 },
                 {
-                    text: busy ? "Guardando..." : "Guardar cifrada",
+                    text: busy ? t("common.saving") : t("save.confirm"),
                     variant: "primary",
                     onClick: () => { void save(); },
                     disabled: !valid || busy,
@@ -91,7 +93,7 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
             <div className="vc-pgp-modal">
                 {!armor && (
                     <div className="vc-pgp-modal-warn">
-                        No hay clave privada cargada. Pega tu clave en PGP Key Manager y vuelve a abrir este menu.
+                        {t("save.noKeyWarn")}
                     </div>
                 )}
 
@@ -99,7 +101,7 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                     className="vc-pgp-input"
                     type="password"
                     autoComplete="new-password"
-                    placeholder="Contrasena de almacenamiento (min. 8 caracteres)"
+                    placeholder={t("save.passwordPlaceholder")}
                     value={password}
                     onChange={e => setPassword(e.currentTarget.value)}
                 />
@@ -107,7 +109,7 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                     className="vc-pgp-input"
                     type="password"
                     autoComplete="new-password"
-                    placeholder="Repite la contrasena"
+                    placeholder={t("save.repeatPlaceholder")}
                     value={confirm}
                     onChange={e => setConfirm(e.currentTarget.value)}
                 />
@@ -118,20 +120,18 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                         checked={includePassphrase}
                         onChange={e => setIncludePassphrase(e.currentTarget.checked)}
                     />
-                    Guardar tambien la passphrase de la clave (si esta en memoria)
+                    {t("save.includePassphrase")}
                 </label>
 
                 <div className="vc-pgp-modal-note">
-                    Cifrado PBKDF2-SHA256 + AES-256-GCM. Se guarda en el almacen local de Vencord
-                    (IndexedDB), nunca en ajustes ni en la nube. Si olvidas la contrasena, podras
-                    volver a pegar tu clave privada.
+                    {t("save.note")}
                 </div>
 
                 {message && <div className="vc-pgp-msg">{message}</div>}
 
                 <div className="vc-pgp-row">
                     <button className="vc-pgp-btn" onClick={openManager}>
-                        Abrir PGP Key Manager
+                        {t("common.openManager")}
                     </button>
                 </div>
             </div>

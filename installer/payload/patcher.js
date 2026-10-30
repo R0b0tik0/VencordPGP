@@ -1,4 +1,4 @@
-// Vencord 32c9063
+// Vencord 16ec4ea
 // Standalone: false
 // Platform: win32
 // Updater Disabled: false

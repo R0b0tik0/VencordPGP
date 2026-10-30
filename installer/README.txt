@@ -9,6 +9,8 @@ inside your Vencord. Before touching anything it backs up:
   - %APPDATA%\Vencord\settings\settings.json
 
 It verifies the payload integrity with SHA-256 and enables the plugin.
+The installer messages and the in-client UI are available in English and
+Spanish.
 For the Spanish version of this file, see LEEME.txt.
 
 
@@ -31,17 +33,31 @@ HOW TO USE IT
 At most 2-3 prompts: close Discord, confirm, open Discord. Nothing else.
 
 
+LANGUAGE
+--------
+Installer messages: English and Spanish, auto-detected from Windows.
+To force one, pass the switch to the .cmd launcher:
+  Instalar VencordPGP.cmd -Language es
+  Instalar VencordPGP.cmd -Language en
+  Instalar VencordPGP.cmd -Language auto      (default)
+The same switch works with "Desinstalar VencordPGP.cmd".
+
+In-client UI: Settings > Vencord > Plugins > VencordPGP > Language.
+  Auto (default) follows Discord's language and uses English when Discord is
+  not in Spanish. Options: Auto / Spanish / English. It applies immediately.
+
+
 AFTER INSTALLING
 ----------------
 1. Open Discord > Settings > Vencord > Plugins > VencordPGP.
-2. Paste your PGP private key and passphrase, then click "Desbloquear"
-   (Unlock). The in-client UI is in Spanish in v1.
+2. Paste your PGP private key and passphrase, then click "Unlock"
+   ("Desbloquear" in Spanish).
    The private key lives in memory only by default: it is not synced and is
    not sent to any server. After closing Discord you have to paste it again.
    You can optionally store it ENCRYPTED on this machine (local vault with a
-   password, PBKDF2 + AES-256-GCM); see "Clave guardada" in the PGP Key
-   Manager. In v1 the vault also stores the key passphrase by default; uncheck
-   that option if you do not want it saved.
+   password, PBKDF2 + AES-256-GCM) from the lock button menu, "Save my private
+   key encrypted...". In v1 the vault also stores the key passphrase by
+   default; uncheck that option if you do not want it saved.
 3. Add the other person's public key with their Discord ID
    (right-click > Copy User ID). The name is only informative.
 4. Compare the fingerprint over an independent channel (voice, in person)
