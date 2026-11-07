@@ -71,7 +71,21 @@ restore the settings JSON if needed.
 ## Rebuilding the payload
 
 The payload is a complete Vencord build with the plugin, not an incremental
-patch. Regenerate it after changing the plugin:
+patch. To update it after a Discord or Vencord change, run:
+
+```powershell
+npm run update:vencord
+```
+
+The helper clones the latest Vencord release into a temporary directory, copies
+`vencord-plugin/vencordPgp` into `src/userplugins`, installs `openpgp` and
+`@openpgp/web-stream-tools`, runs the type-check and build, regenerates
+`installer/payload`, and rebuilds `VencordPGP-Installer.zip`. If Vencord changed
+an API the plugin uses, the type-check fails and the checkout is kept so you can
+fix the plugin and run it again. Use `--version vX.Y.Z` to pin a release,
+`--no-zip` to skip the ZIP, or `--install` to deploy afterwards.
+
+Manual alternative after changing the plugin:
 
 ```powershell
 node scripts/build-installer-payload.mjs <vencord-checkout> .
@@ -95,7 +109,13 @@ keys. It never touches the real Discord/Vencord installation.
 
 ## Release artifacts
 
-Create `VencordPGP-Installer.zip` with:
+Build `VencordPGP-Installer.zip` with:
+
+```powershell
+npm run zip:installer
+```
+
+It contains:
 
 ```text
 Instalar VencordPGP.cmd
@@ -127,8 +147,8 @@ download out of band.
   you can open it in Notepad to review it.
 - Installer messages follow the Windows UI language (Spanish or English) and can
   be forced with `-Language es|en`; the `.cmd` launchers pass flags through.
-- Vencord is GPL-3.0. The payload was built from Vencord 1.15.11 (commit
-  `32c9063`) plus this plugin's source. Both are publicly available; the Vencord
+- Vencord is GPL-3.0. The payload was built from Vencord 1.15.16 (commit
+  `383409e`) plus this plugin's source. Both are publicly available; the Vencord
   license and legal notices are included in `installer/`.
 
 ---

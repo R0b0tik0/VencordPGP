@@ -173,7 +173,7 @@ export function PgpPanel() {
             persistPublicKeys();
             if (previous.length > 0 && !previous.includes(entry.fingerprint)) {
                 setMessage(t("panel.msg.newKeyWarn", { user: userId }));
-                showToast(t("toast.newKeyKnownUser"), "failure");
+                showToast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
             } else {
                 setMessage(t("panel.msg.imported", { fp: entry.fingerprintPretty }));
             }

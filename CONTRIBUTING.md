@@ -52,7 +52,7 @@ npm run test:installer  # Windows installer E2E (sandbox)
 - The tests generate ephemeral ECC keys; they do not need network access.
 - If you change the installer, run `npm run test:installer`.
 - If you change the plugin, build it in a Vencord checkout with
-  `corepack pnpm testTsc && corepack pnpm build`.
+  `corepack pnpm test:ts && corepack pnpm build`.
 
 ## Code style
 

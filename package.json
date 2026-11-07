@@ -21,6 +21,8 @@
     "test": "npm run build && node --test dist/tests/*.test.js",
     "testTsc": "tsc --noEmit",
     "test:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-installer.ps1",
+    "update:vencord": "node scripts/update-vencord-payload.mjs",
+    "zip:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer-zip.ps1",
     "lint": "node scripts/check-no-secrets.mjs",
     "wiki:build": "node scripts/build-wiki.mjs",
     "wiki:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-wiki.ps1"

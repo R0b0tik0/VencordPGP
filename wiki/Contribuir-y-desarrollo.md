@@ -45,16 +45,16 @@ npm run test:installer  # E2E del instalador de Windows (sandbox)
 - No debilites un test para que un cambio pase.
 - Los tests generan claves ECC efímeras; no necesitan red.
 - Si cambias el instalador, ejecuta `npm run test:installer`.
-- Si cambias el plugin, compílalo en un checkout de Vencord con `corepack pnpm testTsc && corepack pnpm build`.
+- Si cambias el plugin, compílalo en un checkout de Vencord con `corepack pnpm test:ts && corepack pnpm build`.
 
 ## Reglas del plugin de Vencord
 
 - Instálalo como **userplugin**: copia la carpeta a `<Vencord>\src\userplugins\vencordPgp\`.
-- Compila y despliega con `corepack pnpm testTsc && corepack pnpm build` (pnpm va fijado por corepack, no global) y copia `dist/*` a `%APPDATA%\Vencord\dist`.
+- Compila y despliega con `corepack pnpm test:ts && corepack pnpm build` (pnpm va fijado por corepack, no global) y copia `dist/*` a `%APPDATA%\Vencord\dist`.
 - Nunca `import ... from "react"`; importa `React` y los hooks desde `@webpack/common`.
 - Nunca llames `enabled` a un ajuste del plugin; colisiona con el flag propio de Vencord. El interruptor global es `pgpEnabled`.
 - El checkout de Vencord necesita `@openpgp/web-stream-tools` como devDependency porque Vencord compila con `skipLibCheck: false`.
-- `corepack pnpm lint` puede fallar en el checkout de Vencord con estos archivos (falta la cabecera GPL original, orden de imports). Las puertas son `testTsc` y `build`.
+- `corepack pnpm lint` puede fallar en el checkout de Vencord con estos archivos (falta la cabecera GPL original, orden de imports). Las puertas son `test:ts` y `build`.
 - La interfaz sigue el idioma de Discord (ajuste `language`: `auto|es|en`). Cada texto nuevo va en los dos catálogos de `i18n.ts`; `en` está tipado contra `es`, así que una clave ausente falla el type-check.
 - `core/` no lleva textos de UI: los mensajes de `PgpError` se traducen por código en `errorText()`. No dupliques esos textos en los componentes.
 - El instalador de Windows mantiene su propia tabla `$script:Messages` (`es`/`en`) y usa `T "key" @(args)`. Mantén ambas tablas sincronizadas.

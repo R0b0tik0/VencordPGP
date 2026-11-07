@@ -45,16 +45,16 @@ npm run test:installer  # Windows installer E2E (sandbox)
 - Do not weaken a test to make a change pass.
 - The tests generate ephemeral ECC keys; they do not need network access.
 - If you change the installer, run `npm run test:installer`.
-- If you change the plugin, build it in a Vencord checkout with `corepack pnpm testTsc && corepack pnpm build`.
+- If you change the plugin, build it in a Vencord checkout with `corepack pnpm test:ts && corepack pnpm build`.
 
 ## Vencord plugin rules
 
 - Install it as a **userplugin**: copy the folder to `<Vencord>\src\userplugins\vencordPgp\`.
-- Build and deploy with `corepack pnpm testTsc && corepack pnpm build` (pnpm is pinned via corepack, not global), then copy `dist/*` to `%APPDATA%\Vencord\dist`.
+- Build and deploy with `corepack pnpm test:ts && corepack pnpm build` (pnpm is pinned via corepack, not global), then copy `dist/*` to `%APPDATA%\Vencord\dist`.
 - Never `import ... from "react"`; import `React` and hooks from `@webpack/common`.
 - Never name a plugin setting `enabled`; it collides with Vencord's own flag. The global toggle is `pgpEnabled`.
 - The Vencord checkout needs `@openpgp/web-stream-tools` as a devDependency because Vencord builds with `skipLibCheck: false`.
-- `corepack pnpm lint` may fail in the Vencord checkout on these files (missing upstream GPL header, import order). `testTsc` and `build` are the gates.
+- `corepack pnpm lint` may fail in the Vencord checkout on these files (missing upstream GPL header, import order). `test:ts` and `build` are the gates.
 - The interface follows Discord's language (`language` setting: `auto|es|en`). Every new UI string goes into both catalogs in `i18n.ts`; `en` is typed against `es`, so a missing key fails type-check.
 - `core/` carries no UI text: `PgpError` messages are translated by code in `errorText()`. Do not duplicate those texts in components.
 - The Windows installer keeps its own `$script:Messages` table (`es`/`en`) and uses `T "key" @(args)`. Keep both tables in sync.

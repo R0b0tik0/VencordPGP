@@ -66,6 +66,19 @@ Discord writes its console log to:
 Search for `[VencordPGP]`. Only metadata is logged (message ID, reason), never
 plaintext, keys, or passphrases.
 
+## Discord opens to a black screen after a Discord update
+
+- The prebuilt Vencord in the installer is pinned to a Vencord version. A Discord
+  update can change the webpack/rspack bundle and the old Vencord build fails to
+  patch it (`Uncaught TypeError: i.A is not a constructor` in
+  `%APPDATA%\discord\logs\renderer_js.log`).
+- Fix: install the current `VencordPGP-Installer.zip` (payload 1.15.16 or newer),
+  or rebuild from source against Vencord 1.15.16+ and redeploy `dist`.
+- If you installed Vencord with its official installer, update/reinstall Vencord
+  first, then reinstall the plugin payload.
+- This is not a VencordPGP key problem: the plugin loads, but the renderer crashes
+  before Discord finishes starting.
+
 ## The plugin appears disabled after a restart
 
 - The private key is not persisted by design. The **plugin** stays enabled in

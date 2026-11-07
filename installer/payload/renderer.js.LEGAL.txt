@@ -49,13 +49,6 @@
 
 Bundled license information:
 
-virtual-merge/dist/index.mjs:
-  /*!
-   * virtual-merge
-   * Copyright (c) 2023 Vendicated
-   * SPDX-License-Identifier: MIT
-   */
-
 openpgp/dist/openpgp.min.mjs:
   /*! OpenPGP.js v6.3.2 - 2026-09-24 - this is LGPL licensed code, see LICENSE/our website https://openpgpjs.org/ for more information. */
   /*! noble-ciphers - MIT License (c) 2023 Paul Miller (paulmillr.com) */

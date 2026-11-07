@@ -54,7 +54,7 @@ npm run test:installer  # E2E del instalador de Windows (sandbox)
 - Las pruebas generan claves ECC efímeras; no necesitan red.
 - Si cambias el instalador, ejecuta `npm run test:installer`.
 - Si cambias el plugin, compílalo en un checkout de Vencord con
-  `corepack pnpm testTsc && corepack pnpm build`.
+  `corepack pnpm test:ts && corepack pnpm build`.
 
 ## Estilo de código
 

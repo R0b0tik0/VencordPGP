@@ -56,7 +56,7 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                 },
                 password
             );
-            showToast(t("toast.privateKeySaved"), "success");
+            showToast({ text: t("toast.privateKeySaved"), variant: "success" });
             modalProps.onClose();
         } catch (e) {
             setMessage(e instanceof PgpError ? errorText(e) : t("save.failed"));

@@ -16,9 +16,9 @@ If you only want to use the plugin, start with
 |---|---|
 | OS | Windows 10/11 for the installer; the core is cross-platform |
 | Discord | Discord Desktop with Vencord installed and injected |
-| Vencord | 1.15.x (tested against `Vendicated/Vencord@main`, October 2026) |
+| Vencord | 1.15.16 or newer (tested against v1.15.16, November 2026) |
 | Node.js | 22 or newer (source builds only) |
-| pnpm | 11, through `corepack pnpm` (source builds only) |
+| pnpm | 12, through `corepack pnpm` (source builds only) |
 | OpenPGP | `openpgp@^6.3.2` (installed as a dependency) |
 
 You do **not** need Node.js, git, or pnpm to use the Windows installer. The
@@ -61,12 +61,12 @@ corepack pnpm add -D @openpgp/web-stream-tools
 ```
 
 `@openpgp/web-stream-tools` is required because Vencord builds with
-`skipLibCheck: false`; without it `testTsc` fails on OpenPGP's stream types.
+`skipLibCheck: false`; without it `test:ts` fails on OpenPGP's stream types.
 
 ### 3. Build and deploy
 
 ```powershell
-corepack pnpm testTsc
+corepack pnpm test:ts
 corepack pnpm build
 ```
 
@@ -83,6 +83,9 @@ official installer.
 
 Open Discord → **Settings → Vencord → Plugins → VencordPGP** and enable it.
 Then configure your keys ([Key management](KEYS.md)).
+
+To rebuild the Windows installer payload from the latest Vencord release, run
+`npm run update:vencord` (see [the installer guide](INSTALLER.md#rebuilding-the-payload)).
 
 ## Keeping the two core copies in sync
 

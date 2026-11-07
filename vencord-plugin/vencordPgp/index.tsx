@@ -1,7 +1,7 @@
 /*
  * VencordPGP — cifrado/descifrado PGP automatico para MD y grupos MD.
  *
- * Integracion verificada contra Vencord 1.15.x:
+ * Integracion verificada contra Vencord 1.15.16+:
  *  - definePlugin/OptionType: @utils/types
  *  - definePluginSettings: @api/Settings
  *  - onBeforeMessageSend/Edit: @api/MessageEvents (cancel => borrador intacto)
@@ -163,7 +163,7 @@ function warnUnverifiedRecipients(channelId: string, recipients: string[]): void
     const warnKey = `${channelId}|${unverified.join(",")}`;
     if (warnedUnverifiedChannels.has(warnKey)) return;
     warnedUnverifiedChannels.add(warnKey);
-    showToast(t("toast.unverifiedRecipients", { users: unverified.join(", ") }), "failure");
+    showToast({ text: t("toast.unverifiedRecipients", { users: unverified.join(", ") }), variant: "critical" });
 }
 
 async function requireUnlockedForEncryption() {
@@ -244,12 +244,12 @@ function unpatchEditAction(): void {
 function startPgpEdit(msg: Message): void {
     const plain = getLocalPlaintext(msg.id);
     if (plain === undefined) {
-        showToast(t("toast.notDecryptedEdit"), "failure");
+        showToast({ text: t("toast.notDecryptedEdit"), variant: "critical" });
         return;
     }
     const actions = MessageActions as any;
     if (typeof actions?.startEditMessage !== "function") {
-        showToast(t("toast.editorUnavailable"), "failure");
+        showToast({ text: t("toast.editorUnavailable"), variant: "critical" });
         return;
     }
     actions.startEditMessage(msg.channel_id, msg.id, plain);
@@ -257,7 +257,7 @@ function startPgpEdit(msg: Message): void {
 
 function toastError(e: unknown) {
     const error = e instanceof PgpError ? errorTextByCode(e.code) : t("toast.cryptoFailed");
-    showToast(t("toast.sendFailed", { error }), "failure");
+    showToast({ text: t("toast.sendFailed", { error }), variant: "critical" });
 }
 
 async function preSend(channelId: string, msg: MessageObject, options: SendMessageOptions, props: SendMessageProps) {
@@ -276,14 +276,14 @@ async function preSend(channelId: string, msg: MessageObject, options: SendMessa
     if (encryptionOn && (gif || sticker)) {
         const hasExtraText = content.replace(GIF_URL_RE, "").trim().length > 0;
         if (hasExtraText) {
-            showToast(t("toast.gifWithTextSend"), "failure");
+            showToast({ text: t("toast.gifWithTextSend"), variant: "critical" });
             return { cancel: true };
         }
         return;
     }
 
     if (encryptionOn && props?.hasAttachments) {
-        showToast(t("toast.attachments"), "failure");
+        showToast({ text: t("toast.attachments"), variant: "critical" });
     }
 
     if (!content.trim()) return;
@@ -298,7 +298,7 @@ async function preSend(channelId: string, msg: MessageObject, options: SendMessa
     // documentado). Grupo con bot + humanos: cancelar, no enviar en claro.
     if (hasBotRecipient(recipients)) {
         if (allRecipientsAreBots(recipients)) return;
-        showToast(t("toast.botGroupSend"), "failure");
+        showToast({ text: t("toast.botGroupSend"), variant: "critical" });
         return { cancel: true };
     }
     warnUnverifiedRecipients(ch.id, recipients);
@@ -332,7 +332,7 @@ async function preEdit(channelId: string, messageId: string, msg: MessageObject)
     if (isPgpTransport(content)) {
         // El editor muestra el ciphertext (no se descifro o el parche no aplico):
         // bloquear para no reenviar el bloque cifrado como si fuera texto editado.
-        showToast(t("toast.notDecryptedUseMenu"), "failure");
+        showToast({ text: t("toast.notDecryptedUseMenu"), variant: "critical" });
         return { cancel: true };
     }
     const ch = channelOf(channelId);
@@ -342,7 +342,7 @@ async function preEdit(channelId: string, messageId: string, msg: MessageObject)
     if (encryptionOn && isGifContent(content)) {
         const hasExtraText = content.replace(GIF_URL_RE, "").trim().length > 0;
         if (hasExtraText) {
-            showToast(t("toast.gifWithTextEdit"), "failure");
+            showToast({ text: t("toast.gifWithTextEdit"), variant: "critical" });
             return { cancel: true };
         }
         return;
@@ -356,7 +356,7 @@ async function preEdit(channelId: string, messageId: string, msg: MessageObject)
     const recipients = plan.recipients ?? [];
     if (hasBotRecipient(recipients)) {
         if (allRecipientsAreBots(recipients)) return;
-        showToast(t("toast.botGroupEdit"), "failure");
+        showToast({ text: t("toast.botGroupEdit"), variant: "critical" });
         return { cancel: true };
     }
     warnUnverifiedRecipients(ch.id, recipients);

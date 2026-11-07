@@ -17,7 +17,7 @@ import { getOwnPublicArmor, keyStore, notifyState, persistPublicKeys, subscribeS
 export function openAssignKeyModal(channel: Channel, initialUserId?: string): void {
     const recipients = getDmRecipients(channel);
     if (recipients.length === 0) {
-        showToast(t("toast.noRecipients"), "failure");
+        showToast({ text: t("toast.noRecipients"), variant: "critical" });
         return;
     }
     openModal(modalProps => (
@@ -64,7 +64,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                     name: recipient.name,
                     fp: entry.fingerprintPretty,
                 }));
-                showToast(t("toast.newKeyKnownUser"), "failure");
+                showToast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
             } else {
                 setMessage(t("assign.saved", { fp: entry.fingerprintPretty }));
             }

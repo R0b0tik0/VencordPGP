@@ -84,30 +84,30 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
 
     function onToggle() {
         if (!globalOn) {
-            showToast(t("toast.globallyDisabled"), "failure");
+            showToast({ text: t("toast.globallyDisabled"), variant: "critical" });
             return;
         }
         if (botOnly) {
-            showToast(t("toast.botNoEncrypt"), "message");
+            showToast({ text: t("toast.botNoEncrypt") });
             return;
         }
         if (desired) {
             setOverride("off");
-            showToast(t("toast.encryptionOffChannel"), "message");
+            showToast({ text: t("toast.encryptionOffChannel") });
             return;
         }
         if (hasBot) {
-            showToast(t("toast.botGroupCannotEncrypt"), "failure");
+            showToast({ text: t("toast.botGroupCannotEncrypt"), variant: "critical" });
             return;
         }
 
         setOverride("on");
         const stillMissing = recipients.filter(r => keyStore.getEncryptionArmors(r.id).length === 0);
         if (stillMissing.length > 0) {
-            showToast(t("toast.encryptionOnMissing", { users: stillMissing.map(r => r.name).join(", ") }), "failure");
+            showToast({ text: t("toast.encryptionOnMissing", { users: stillMissing.map(r => r.name).join(", ") }), variant: "critical" });
             openAssignKeyModal(channel, stillMissing[0].id);
         } else {
-            showToast(t("toast.encryptionOn"), "success");
+            showToast({ text: t("toast.encryptionOn"), variant: "success" });
         }
     }
 
@@ -115,7 +115,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         if (await hasStoredVault()) {
             openStoredKeyModal();
         } else {
-            showToast(t("toast.noStoredKey"), "failure");
+            showToast({ text: t("toast.noStoredKey"), variant: "critical" });
         }
     }
 
@@ -125,7 +125,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         decryptCache.lock();
         setOwnPublicArmor(null);
         notifyState();
-        showToast(t("toast.keyLocked"), "message");
+        showToast({ text: t("toast.keyLocked") });
     }
 
     function openManager() {

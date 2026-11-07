@@ -9,7 +9,7 @@ There is no signed release pipeline yet.
 - `src/tests/core.test.ts` + `src/tests/vault.test.ts` — the test suites (`node --test dist/tests/*.test.js`).
 - `vencord-plugin/vencordPgp/` — the actual Vencord plugin (`index.tsx`, `render.ts`, `PgpAccessory.tsx`, `PgpPanel.tsx`, `PgpLockButton.tsx`, `AssignKeyModal.tsx`, `SaveVaultModal.tsx`, `StoredKeyModal.tsx`, `vault.ts`, `dm.ts`, `icons.tsx`, `state.ts`, `core/`). NOT type-checked by this repo's `tsconfig.json` (`include: ["src/**/*"]`).
 - `installer/` — Windows installer + `payload/` (prebuilt Vencord renderer) and manifest.
-- `scripts/` — sync, payload generation, key generator, secret scan, installer sandbox test.
+- `scripts/` — sync, payload generation/update, ZIP build, key generator, secret scan, installer sandbox test.
 
 ## Commands
 - `npm run build` — `tsc` (NodeNext) → `dist/`.
@@ -18,6 +18,8 @@ There is no signed release pipeline yet.
 - `npm run testTsc` — `tsc --noEmit`.
 - `npm run lint` — NOT ESLint. Runs `scripts/check-no-secrets.mjs` and fails on real private-key blocks / passphrase literals across the tree (skips `node_modules`, `dist`, `pgp-keys`, `installer/payload`, tests).
 - `npm run test:installer` — PowerShell sandbox E2E for the installer; does not touch the real Discord/Vencord install.
+- `npm run update:vencord` — clones the latest Vencord release, copies the plugin, type-checks/builds it, regenerates `installer/payload`, and rebuilds `VencordPGP-Installer.zip`.
+- `npm run zip:installer` — rebuilds `VencordPGP-Installer.zip` from the current payload (gitignored release artifact).
 - `npm run wiki:build` — regenerates `wiki/` from `docs/` + `docs/es/` (hand-written index pages are preserved). `npm run wiki:publish` pushes `wiki/` to the GitHub wiki repo.
 
 ## Two copies of the core (critical)
@@ -26,11 +28,11 @@ There is no signed release pipeline yet.
 - Sync one way: `node scripts/sync-vencord-core.mjs <core-dir>`. That is enough — `src` already contains the limit tweaks.
 
 ## Vencord plugin quirks
-- Install as a **userplugin**: copy the folder to `<Vencord>/src/userplugins/vencordPgp/`. Build/deploy with `corepack pnpm testTsc && corepack pnpm build` (pnpm is pinned via corepack, not global) then copy `dist/*` to `%APPDATA%\Vencord\dist`.
+- Install as a **userplugin**: copy the folder to `<Vencord>/src/userplugins/vencordPgp/`. Build/deploy with `corepack pnpm test:ts && corepack pnpm build` (pnpm is pinned via corepack, not global) then copy `dist/*` to `%APPDATA%\Vencord\dist`.
 - Never `import ... from "react"` — Vencord bans it; import `React`/hooks from `@webpack/common`.
 - Never name a plugin setting `enabled` — it collides with Vencord's own `plugins.<name>.enabled` flag. The global toggle is `pgpEnabled`.
-- The Vencord checkout needs `@openpgp/web-stream-tools` (devDependency) because Vencord sets `skipLibCheck: false`, or `testTsc` fails on openpgp types.
-- `corepack pnpm lint` in the Vencord checkout may fail on these files (no upstream GPL header / import order); rely on `testTsc` + `build` as the gates.
+- The Vencord checkout needs `@openpgp/web-stream-tools` (devDependency) because Vencord sets `skipLibCheck: false`, or `test:ts` fails on openpgp types.
+- `corepack pnpm lint` in the Vencord checkout may fail on these files (no upstream GPL header / import order); rely on `test:ts` + `build` as the gates.
 - Incoming display: the ciphertext is NOT rewritten in the store. `render.ts` only decrypts into RAM; `PgpAccessory.tsx` renders the plaintext via `ReactDOM.createPortal` into a container inserted right after `#message-content-<id>` (so reactions/actions stay below like a normal message), hiding the original content; `ver cifrado` / `ver descifrado` toggles. No `updateMessage`/`MessageUpdaterAPI` involved. Keep the hidden-ciphertext default.
 - Decryption loop hazard: `decryptMessage` must NOT call `notifyState()` for results already in `decryptCache` (it returns early). Notifying on a cached error causes render→decrypt→notify→… and freezes/crashes the client. On unlock/key changes call `resetDecryptionCache()` to retry.
 - Invalid signatures must NOT throw/abort: `decryptTransportToBody` returns the body with `signatureValid: false` and the UI marks it red (`vc-pgp-bad-sig`); a mismatched/outdated public key must not hide the message.
@@ -57,7 +59,7 @@ There is no signed release pipeline yet.
 
 ## Installer
 - Entrypoints: `Instalar VencordPGP.cmd` / `Desinstalar VencordPGP.cmd` → `installer/VencordPGP-Installer.ps1` (`-Install/-Uninstall/-Silent/-Force/-DryRun/-DiscordRoot/-VencordRoot`).
-- `installer/payload/` is a prebuilt Vencord 1.15.11 renderer + `manifest.sha256`. Never hand-edit it; regenerate with `node scripts/build-installer-payload.mjs <vencord-checkout> .` (aborts if the renderer lacks `VencordPGP`).
+- `installer/payload/` is a prebuilt Vencord 1.15.16 renderer + `manifest.sha256`. Never hand-edit it; regenerate with `node scripts/build-installer-payload.mjs <vencord-checkout> .` (aborts if the renderer lacks `VencordPGP`).
 - Uninstall restores the newest backup whose renderer has no `VencordPGP`, then sets `plugins.VencordPGP.enabled=false` while keeping public keys/options.
 
 ## Docs map

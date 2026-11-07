@@ -92,7 +92,7 @@ function StoredKeyModal({ modalProps, onDone }: {
             setOwnPublicArmor(session.requireUnlocked().toPublic().armor());
             resetDecryptionCache();
             notifyState();
-            showToast(t("toast.keyLoadedUnlocked"), "success");
+            showToast({ text: t("toast.keyLoadedUnlocked"), variant: "success" });
             finish(true);
             modalProps.onClose();
         } catch (e) {
@@ -105,7 +105,7 @@ function StoredKeyModal({ modalProps, onDone }: {
     async function removeStored() {
         await deleteVault();
         notifyState();
-        showToast(t("toast.storedKeyDeleted"), "message");
+        showToast({ text: t("toast.storedKeyDeleted") });
         finish(false);
         modalProps.onClose();
     }

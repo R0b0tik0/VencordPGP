@@ -128,7 +128,7 @@ export function PgpAccessory({ message }: { message: Message; }) {
         try {
             if (await hasStoredVault()) {
                 const ok = await requestStoredKeyUnlock();
-                if (ok) showToast(t("toast.keyUnlocked"), "success");
+                if (ok) showToast({ text: t("toast.keyUnlocked"), variant: "success" });
             } else {
                 const self = plugins["VencordPGP"];
                 if (self) openPluginModal(self);
