@@ -22,7 +22,7 @@ import { definePluginSettings, SettingsStore } from "@api/Settings";
 import type { Message } from "@vencord/discord-types";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, LocaleStore, showToast, UserStore } from "@webpack/common";
+import { ChannelStore, LocaleStore, UserStore } from "@webpack/common";
 
 import { isSupportedChannel, resolveEncryptionEnabled, type ChannelLike } from "./core/channelPolicy";
 import { PgpError } from "./core/errors";
@@ -30,6 +30,7 @@ import { KeyStore } from "./core/keyStore";
 import { planOutgoing, encryptOutgoing } from "./core/outgoing";
 import { isPgpTransport } from "./core/transport";
 import { configureI18n, errorTextByCode, t } from "./i18n";
+import { toast } from "./notify";
 import { PgpAccessory } from "./PgpAccessory";
 import { PgpLockButton } from "./PgpLockButton";
 import { PgpLockIcon } from "./icons";
@@ -163,7 +164,7 @@ function warnUnverifiedRecipients(channelId: string, recipients: string[]): void
     const warnKey = `${channelId}|${unverified.join(",")}`;
     if (warnedUnverifiedChannels.has(warnKey)) return;
     warnedUnverifiedChannels.add(warnKey);
-    showToast({ text: t("toast.unverifiedRecipients", { users: unverified.join(", ") }), variant: "critical" });
+    toast({ text: t("toast.unverifiedRecipients", { users: unverified.join(", ") }), variant: "critical" });
 }
 
 async function requireUnlockedForEncryption() {
@@ -244,12 +245,12 @@ function unpatchEditAction(): void {
 function startPgpEdit(msg: Message): void {
     const plain = getLocalPlaintext(msg.id);
     if (plain === undefined) {
-        showToast({ text: t("toast.notDecryptedEdit"), variant: "critical" });
+        toast({ text: t("toast.notDecryptedEdit"), variant: "critical" });
         return;
     }
     const actions = MessageActions as any;
     if (typeof actions?.startEditMessage !== "function") {
-        showToast({ text: t("toast.editorUnavailable"), variant: "critical" });
+        toast({ text: t("toast.editorUnavailable"), variant: "critical" });
         return;
     }
     actions.startEditMessage(msg.channel_id, msg.id, plain);
@@ -257,10 +258,24 @@ function startPgpEdit(msg: Message): void {
 
 function toastError(e: unknown) {
     const error = e instanceof PgpError ? errorTextByCode(e.code) : t("toast.cryptoFailed");
-    showToast({ text: t("toast.sendFailed", { error }), variant: "critical" });
+    toast({ text: t("toast.sendFailed", { error }), variant: "critical" });
 }
 
+/**
+ * Envoltorio fail-closed: Vencord ignora las excepciones de los listeners de
+ * envio/edicion y seguiria adelante con el mensaje tal cual (en claro). Ante
+ * cualquier fallo inesperado, cancelar y avisar.
+ */
 async function preSend(channelId: string, msg: MessageObject, options: SendMessageOptions, props: SendMessageProps) {
+    try {
+        return await handlePreSend(channelId, msg, options, props);
+    } catch (e) {
+        toastError(e);
+        return { cancel: true };
+    }
+}
+
+async function handlePreSend(channelId: string, msg: MessageObject, options: SendMessageOptions, props: SendMessageProps) {
     if (!settings.store.pgpEnabled) return;
     const ch = channelOf(channelId);
     if (!ch || !isSupportedChannel(ch)) return;
@@ -276,14 +291,14 @@ async function preSend(channelId: string, msg: MessageObject, options: SendMessa
     if (encryptionOn && (gif || sticker)) {
         const hasExtraText = content.replace(GIF_URL_RE, "").trim().length > 0;
         if (hasExtraText) {
-            showToast({ text: t("toast.gifWithTextSend"), variant: "critical" });
+            toast({ text: t("toast.gifWithTextSend"), variant: "critical" });
             return { cancel: true };
         }
         return;
     }
 
     if (encryptionOn && props?.hasAttachments) {
-        showToast({ text: t("toast.attachments"), variant: "critical" });
+        toast({ text: t("toast.attachments"), variant: "critical" });
     }
 
     if (!content.trim()) return;
@@ -298,7 +313,7 @@ async function preSend(channelId: string, msg: MessageObject, options: SendMessa
     // documentado). Grupo con bot + humanos: cancelar, no enviar en claro.
     if (hasBotRecipient(recipients)) {
         if (allRecipientsAreBots(recipients)) return;
-        showToast({ text: t("toast.botGroupSend"), variant: "critical" });
+        toast({ text: t("toast.botGroupSend"), variant: "critical" });
         return { cancel: true };
     }
     warnUnverifiedRecipients(ch.id, recipients);
@@ -326,13 +341,22 @@ async function preSend(channelId: string, msg: MessageObject, options: SendMessa
 }
 
 async function preEdit(channelId: string, messageId: string, msg: MessageObject) {
+    try {
+        return await handlePreEdit(channelId, messageId, msg);
+    } catch (e) {
+        toastError(e);
+        return { cancel: true };
+    }
+}
+
+async function handlePreEdit(channelId: string, messageId: string, msg: MessageObject) {
     if (!settings.store.pgpEnabled) return;
     const content = msg.content ?? "";
     if (!content.trim()) return;
     if (isPgpTransport(content)) {
         // El editor muestra el ciphertext (no se descifro o el parche no aplico):
         // bloquear para no reenviar el bloque cifrado como si fuera texto editado.
-        showToast({ text: t("toast.notDecryptedUseMenu"), variant: "critical" });
+        toast({ text: t("toast.notDecryptedUseMenu"), variant: "critical" });
         return { cancel: true };
     }
     const ch = channelOf(channelId);
@@ -342,7 +366,7 @@ async function preEdit(channelId: string, messageId: string, msg: MessageObject)
     if (encryptionOn && isGifContent(content)) {
         const hasExtraText = content.replace(GIF_URL_RE, "").trim().length > 0;
         if (hasExtraText) {
-            showToast({ text: t("toast.gifWithTextEdit"), variant: "critical" });
+            toast({ text: t("toast.gifWithTextEdit"), variant: "critical" });
             return { cancel: true };
         }
         return;
@@ -356,7 +380,7 @@ async function preEdit(channelId: string, messageId: string, msg: MessageObject)
     const recipients = plan.recipients ?? [];
     if (hasBotRecipient(recipients)) {
         if (allRecipientsAreBots(recipients)) return;
-        showToast({ text: t("toast.botGroupEdit"), variant: "critical" });
+        toast({ text: t("toast.botGroupEdit"), variant: "critical" });
         return { cancel: true };
     }
     warnUnverifiedRecipients(ch.id, recipients);

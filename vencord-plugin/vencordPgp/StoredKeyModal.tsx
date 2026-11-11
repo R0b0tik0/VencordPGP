@@ -8,10 +8,11 @@
  * - Textos via i18n (es/en).
  */
 import type { RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, React, showToast } from "@webpack/common";
+import { Modal, openModal, React } from "@webpack/common";
 
 import { PgpError } from "./core/errors";
 import { errorText, t } from "./i18n";
+import { toast } from "./notify";
 import { resetDecryptionCache } from "./render";
 import {
     notifyState, session, setOwnPublicArmor, setPrivateArmorDraft,
@@ -89,23 +90,34 @@ function StoredKeyModal({ modalProps, onDone }: {
                 }
                 throw e;
             }
+        } catch (e) {
+            setMessage(errorText(e));
+            return;
+        } finally {
+            setBusy(false);
+        }
+        // Clave ya cargada: nada cosmetico (avisos, estado de UI) puede dejar el
+        // modal abierto ni mostrar un error despues de un desbloqueo correcto.
+        try {
             setOwnPublicArmor(session.requireUnlocked().toPublic().armor());
             resetDecryptionCache();
             notifyState();
-            showToast({ text: t("toast.keyLoadedUnlocked"), variant: "success" });
+            toast({ text: t("toast.keyLoadedUnlocked"), variant: "success" });
+        } finally {
             finish(true);
             modalProps.onClose();
-        } catch (e) {
-            setMessage(errorText(e));
-        } finally {
-            setBusy(false);
         }
     }
 
     async function removeStored() {
-        await deleteVault();
+        try {
+            await deleteVault();
+        } catch (e) {
+            setMessage(errorText(e));
+            return;
+        }
         notifyState();
-        showToast({ text: t("toast.storedKeyDeleted") });
+        toast({ text: t("toast.storedKeyDeleted") });
         finish(false);
         modalProps.onClose();
     }

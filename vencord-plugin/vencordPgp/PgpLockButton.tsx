@@ -16,13 +16,14 @@
 import { ChatBarButton, type ChatBarButtonFactory } from "@api/ChatButtons";
 import { plugins } from "@api/PluginManager";
 import { openPluginModal } from "@components/settings";
-import { ContextMenuApi, Menu, React, showToast, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, React, UserStore } from "@webpack/common";
 
 import { openAssignKeyModal } from "./AssignKeyModal";
 import { resolveEncryptionEnabled } from "./core/channelPolicy";
 import { getDmRecipients, isDmChannel } from "./dm";
 import { t } from "./i18n";
 import { LockIcon, UnlockIcon } from "./icons";
+import { toast } from "./notify";
 import { clearDecrypted } from "./render";
 import { openSaveVaultModal } from "./SaveVaultModal";
 import { openStoredKeyModal } from "./StoredKeyModal";
@@ -84,30 +85,30 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
 
     function onToggle() {
         if (!globalOn) {
-            showToast({ text: t("toast.globallyDisabled"), variant: "critical" });
+            toast({ text: t("toast.globallyDisabled"), variant: "critical" });
             return;
         }
         if (botOnly) {
-            showToast({ text: t("toast.botNoEncrypt") });
+            toast({ text: t("toast.botNoEncrypt") });
             return;
         }
         if (desired) {
             setOverride("off");
-            showToast({ text: t("toast.encryptionOffChannel") });
+            toast({ text: t("toast.encryptionOffChannel") });
             return;
         }
         if (hasBot) {
-            showToast({ text: t("toast.botGroupCannotEncrypt"), variant: "critical" });
+            toast({ text: t("toast.botGroupCannotEncrypt"), variant: "critical" });
             return;
         }
 
         setOverride("on");
         const stillMissing = recipients.filter(r => keyStore.getEncryptionArmors(r.id).length === 0);
         if (stillMissing.length > 0) {
-            showToast({ text: t("toast.encryptionOnMissing", { users: stillMissing.map(r => r.name).join(", ") }), variant: "critical" });
+            toast({ text: t("toast.encryptionOnMissing", { users: stillMissing.map(r => r.name).join(", ") }), variant: "critical" });
             openAssignKeyModal(channel, stillMissing[0].id);
         } else {
-            showToast({ text: t("toast.encryptionOn"), variant: "success" });
+            toast({ text: t("toast.encryptionOn"), variant: "success" });
         }
     }
 
@@ -115,7 +116,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         if (await hasStoredVault()) {
             openStoredKeyModal();
         } else {
-            showToast({ text: t("toast.noStoredKey"), variant: "critical" });
+            toast({ text: t("toast.noStoredKey"), variant: "critical" });
         }
     }
 
@@ -125,7 +126,7 @@ export function PgpLockButton({ channel, isMainChat, settings }: Props) {
         decryptCache.lock();
         setOwnPublicArmor(null);
         notifyState();
-        showToast({ text: t("toast.keyLocked") });
+        toast({ text: t("toast.keyLocked") });
     }
 
     function openManager() {

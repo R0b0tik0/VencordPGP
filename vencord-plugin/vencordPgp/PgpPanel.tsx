@@ -7,10 +7,10 @@
  *   completa; verificación manual; multi-clave; import/export/borrado.
  * - Textos via i18n (es/en, ajuste `language`).
  */
-import { copyWithToast } from "@utils/discord";
-import { React, showToast } from "@webpack/common";
+import { React } from "@webpack/common";
 
 import { errorText, t } from "./i18n";
+import { copyAndToast, toast } from "./notify";
 import { clearDecrypted, resetDecryptionCache } from "./render";
 import {
     decryptCache, getOwnPublicArmor, getPrivateArmorDraft, keyStore,
@@ -173,7 +173,7 @@ export function PgpPanel() {
             persistPublicKeys();
             if (previous.length > 0 && !previous.includes(entry.fingerprint)) {
                 setMessage(t("panel.msg.newKeyWarn", { user: userId }));
-                showToast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
+                toast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
             } else {
                 setMessage(t("panel.msg.imported", { fp: entry.fingerprintPretty }));
             }
@@ -270,7 +270,7 @@ export function PgpPanel() {
                 {ownPublic && (
                     <button
                         className="vc-pgp-btn"
-                        onClick={() => void copyWithToast(ownPublic, t("common.copyPublicKey"))}
+                        onClick={() => void copyAndToast(ownPublic, t("common.copyPublicKey"))}
                     >
                         {t("common.copyOwnPublicKey")}
                     </button>
@@ -359,13 +359,13 @@ export function PgpPanel() {
                             </span>
                             <button
                                 className="vc-pgp-btn vc-pgp-small"
-                                onClick={() => void copyWithToast(k.fingerprintPretty, t("common.copyFingerprint"))}
+                                onClick={() => void copyAndToast(k.fingerprintPretty, t("common.copyFingerprint"))}
                             >
                                 {t("common.copyFingerprintButton")}
                             </button>
                             <button
                                 className="vc-pgp-btn vc-pgp-small"
-                                onClick={() => void copyWithToast(k.armored, t("common.copyPublicKey"))}
+                                onClick={() => void copyAndToast(k.armored, t("common.copyPublicKey"))}
                             >
                                 {t("common.export")}
                             </button>

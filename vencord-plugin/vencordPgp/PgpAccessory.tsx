@@ -9,11 +9,12 @@
 import type { Message } from "@vencord/discord-types";
 import { openPluginModal } from "@components/settings";
 import { plugins } from "@api/PluginManager";
-import { ChannelStore, Parser, React, ReactDOM, SelectedChannelStore, showToast } from "@webpack/common";
+import { ChannelStore, Parser, React, ReactDOM, SelectedChannelStore } from "@webpack/common";
 
 import { isSupportedChannel } from "./core/channelPolicy";
 import { isPgpTransport } from "./core/transport";
 import { t } from "./i18n";
+import { toast } from "./notify";
 import { decryptMessage, getLocalPlaintext, isLocallyDecrypted } from "./render";
 import { decryptCache, getStateVersion, session, subscribeState } from "./state";
 import { requestStoredKeyUnlock } from "./StoredKeyModal";
@@ -128,7 +129,7 @@ export function PgpAccessory({ message }: { message: Message; }) {
         try {
             if (await hasStoredVault()) {
                 const ok = await requestStoredKeyUnlock();
-                if (ok) showToast({ text: t("toast.keyUnlocked"), variant: "success" });
+                if (ok) toast({ text: t("toast.keyUnlocked"), variant: "success" });
             } else {
                 const self = plugins["VencordPGP"];
                 if (self) openPluginModal(self);

@@ -10,10 +10,11 @@
 import { plugins } from "@api/PluginManager";
 import { openPluginModal } from "@components/settings";
 import type { RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, React, showToast } from "@webpack/common";
+import { Modal, openModal, React } from "@webpack/common";
 
 import { PgpError } from "./core/errors";
 import { errorText, t } from "./i18n";
+import { toast } from "./notify";
 import { getPrivateArmorDraft, session } from "./state";
 import { saveToVault } from "./vault";
 
@@ -56,7 +57,7 @@ function SaveVaultModal({ modalProps }: { modalProps: RenderModalProps; }) {
                 },
                 password
             );
-            showToast({ text: t("toast.privateKeySaved"), variant: "success" });
+            toast({ text: t("toast.privateKeySaved"), variant: "success" });
             modalProps.onClose();
         } catch (e) {
             setMessage(e instanceof PgpError ? errorText(e) : t("save.failed"));

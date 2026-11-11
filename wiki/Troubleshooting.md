@@ -77,6 +77,21 @@ plaintext, keys, or passphrases.
 - This is not a VencordPGP key problem: the plugin loads, but the renderer crashes
   before Discord finishes starting.
 
+## No warnings appear, or a modal shows `Function.prototype.apply was called on null`
+
+- Vencord resolves Discord's toast module with a webpack filter. A Discord update
+  can change that module, so Vencord's `showToast` stops resolving and calling it
+  throws `Function.prototype.apply was called on null, which is null and not a
+  function`.
+- The plugin does not depend on it: warnings fall back to a small notice drawn by
+  the plugin itself (bottom-left, dismisses on its own, max 3 at a time). Unlocking
+  a saved key, cancelling a send, and every other flow keep working; nothing is
+  sent in clear because a warning failed.
+- If you still see that error text inside a modal, the installed build is old:
+  reinstall the payload or rebuild `dist`.
+- To get Discord's own toast back, rebuild against a newer Vencord
+  (`npm run update:vencord`) once upstream updates the filter.
+
 ## The plugin appears disabled after a restart
 
 - The private key is not persisted by design. The **plugin** stays enabled in

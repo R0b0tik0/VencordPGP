@@ -5,19 +5,19 @@
  * Solo se guardan claves publicas. La privada nunca se toca aqui.
  * Textos via i18n (es/en).
  */
-import { copyWithToast } from "@utils/discord";
 import type { Channel, RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, React, showToast } from "@webpack/common";
+import { Modal, openModal, React } from "@webpack/common";
 
 import { errorText, t } from "./i18n";
 import { getDmRecipients, type DmRecipient } from "./dm";
+import { copyAndToast, toast } from "./notify";
 import { resetDecryptionCache } from "./render";
 import { getOwnPublicArmor, keyStore, notifyState, persistPublicKeys, subscribeState } from "./state";
 
 export function openAssignKeyModal(channel: Channel, initialUserId?: string): void {
     const recipients = getDmRecipients(channel);
     if (recipients.length === 0) {
-        showToast({ text: t("toast.noRecipients"), variant: "critical" });
+        toast({ text: t("toast.noRecipients"), variant: "critical" });
         return;
     }
     openModal(modalProps => (
@@ -64,7 +64,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                     name: recipient.name,
                     fp: entry.fingerprintPretty,
                 }));
-                showToast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
+                toast({ text: t("toast.newKeyKnownUser"), variant: "critical" });
             } else {
                 setMessage(t("assign.saved", { fp: entry.fingerprintPretty }));
             }
@@ -95,7 +95,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
             setMessage(t("assign.unlockToCopy"));
             return;
         }
-        await copyWithToast(ownPublic, t("common.copyPublicKey"));
+        await copyAndToast(ownPublic, t("common.copyPublicKey"));
     }
 
     return (
@@ -163,7 +163,7 @@ function AssignKeyModal({ modalProps, recipients, initialUserId }: {
                         </span>
                         <button
                             className="vc-pgp-btn vc-pgp-small"
-                            onClick={() => void copyWithToast(k.fingerprintPretty, t("common.copyFingerprint"))}
+                            onClick={() => void copyAndToast(k.fingerprintPretty, t("common.copyFingerprint"))}
                         >
                             {t("common.copyFingerprintButton")}
                         </button>

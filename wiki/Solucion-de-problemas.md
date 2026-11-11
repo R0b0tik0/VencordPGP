@@ -76,6 +76,21 @@ texto en claro, claves ni passphrases.
 - No es un problema de claves de VencordPGP: el plugin carga, pero el renderer se
   rompe antes de que Discord termine de arrancar.
 
+## No salen los avisos, o un modal muestra `Function.prototype.apply was called on null`
+
+- Vencord resuelve el módulo de toasts de Discord con un filtro de webpack. Una
+  actualización de Discord puede cambiar ese módulo: el `showToast` de Vencord deja
+  de resolverse y al llamarlo lanza `Function.prototype.apply was called on null,
+  which is null and not a function`.
+- El plugin ya no depende de eso: los avisos pasan a un recuadro propio del plugin
+  (abajo a la izquierda, se quita solo, máximo 3 a la vez). Desbloquear una clave
+  guardada, cancelar un envío y el resto de flujos siguen funcionando; ningún
+  mensaje sale en claro porque falle un aviso.
+- Si todavía ves ese texto de error dentro de un modal, el build instalado es
+  antiguo: reinstala el payload o vuelve a compilar `dist`.
+- Para recuperar el toast nativo de Discord, recompila contra un Vencord más nuevo
+  (`npm run update:vencord`) cuando upstream actualice el filtro.
+
 ## El plugin aparece desactivado al reiniciar
 
 - La clave privada no se persiste por diseño. El **plugin** sí queda activado en

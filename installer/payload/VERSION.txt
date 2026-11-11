@@ -1,5 +1,5 @@
 VencordPGP installer payload
 Vencord: 1.15.16 (383409e)
-Build: 2026-11-07
+Build: 2026-11-10
 Plugin: VencordPGP (userplugin vencordPgp)
 Incluye: patcher.js, preload.js, renderer.js, renderer.css (+ licencias)
