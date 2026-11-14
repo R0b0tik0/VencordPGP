@@ -85,6 +85,7 @@ The helper clones the latest Vencord release into a temporary directory, copies
 `installer/payload`, and rebuilds `VencordPGP-Installer.zip`. If Vencord changed
 an API the plugin uses, the type-check fails and the checkout is kept so you can
 fix the plugin and run it again. Use `--version vX.Y.Z` to pin a release,
+`--ref main` (or a full commit SHA) to build from an unreleased tip with fixes,
 `--no-zip` to skip the ZIP, or `--install` to deploy afterwards.
 
 Manual alternative after changing the plugin:
@@ -149,6 +150,6 @@ download out of band.
   you can open it in Notepad to review it.
 - Installer messages follow the Windows UI language (Spanish or English) and can
   be forced with `-Language es|en`; the `.cmd` launchers pass flags through.
-- Vencord is GPL-3.0. The payload was built from Vencord 1.15.16 (commit
-  `383409e`) plus this plugin's source. Both are publicly available; the Vencord
-  license and legal notices are included in `installer/`.
+- Vencord is GPL-3.0. The payload was built from Vencord 1.15.17 (`main @ d07030c`,
+  including post-release fixes) plus this plugin's source. Both are publicly
+  available; the Vencord license and legal notices are included in `installer/`.

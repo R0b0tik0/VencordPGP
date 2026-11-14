@@ -16,7 +16,7 @@ Si solo quieres usar el plugin, empieza por el
 |---|---|
 | Sistema | Windows 10/11 para el instalador; el núcleo es multiplataforma |
 | Discord | Discord Desktop con Vencord instalado e inyectado |
-| Vencord | 1.15.16 o superior (probado contra v1.15.16, noviembre de 2026) |
+| Vencord | 1.15.17 o superior (probado contra v1.15.17, noviembre de 2026) |
 | Node.js | 22 o superior (solo para compilar desde el código) |
 | pnpm | 12, mediante `corepack pnpm` (solo para compilar) |
 | OpenPGP | `openpgp@^6.3.2` (se instala como dependencia) |

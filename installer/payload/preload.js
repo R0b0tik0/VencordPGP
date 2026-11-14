@@ -1,4 +1,4 @@
-// Vencord 383409e
+// Vencord d07030c
 // Standalone: false
 // Platform: win32
 // Updater Disabled: false

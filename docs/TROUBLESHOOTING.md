@@ -72,8 +72,8 @@ plaintext, keys, or passphrases.
   update can change the webpack/rspack bundle and the old Vencord build fails to
   patch it (`Uncaught TypeError: i.A is not a constructor` in
   `%APPDATA%\discord\logs\renderer_js.log`).
-- Fix: install the current `VencordPGP-Installer.zip` (payload 1.15.16 or newer),
-  or rebuild from source against Vencord 1.15.16+ and redeploy `dist`.
+- Fix: install the current `VencordPGP-Installer.zip` (payload 1.15.17 or newer),
+  or rebuild from source against Vencord 1.15.17+ and redeploy `dist`.
 - If you installed Vencord with its official installer, update/reinstall Vencord
   first, then reinstall the plugin payload.
 - This is not a VencordPGP key problem: the plugin loads, but the renderer crashes

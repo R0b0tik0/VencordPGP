@@ -3,7 +3,10 @@
  * plugin VencordPGP. Incluye solo los archivos necesarios (sin source maps).
  *
  * Uso:
- *   node scripts/build-installer-payload.mjs <vencord-checkout> [repo-root]
+ *   node scripts/build-installer-payload.mjs <vencord-checkout> [repo-root] [ref-label]
+ *
+ * `ref-label` (p. ej. "main @ d07030c") sustituye al commit corto en VERSION.txt
+ * cuando el build no sale de un tag de release.
  */
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -12,8 +15,9 @@ import { execFileSync } from "node:child_process";
 
 const checkout = process.argv[2];
 const repoRoot = resolve(process.argv[3] || process.cwd());
+const refLabel = (process.argv[4] || "").trim() || null;
 if (!checkout) {
-    console.error("Uso: node scripts/build-installer-payload.mjs <vencord-checkout> [repo-root]");
+    console.error("Uso: node scripts/build-installer-payload.mjs <vencord-checkout> [repo-root] [ref-label]");
     process.exit(1);
 }
 
@@ -62,9 +66,12 @@ try {
 } catch { /* noop */ }
 
 const stamp = new Date().toISOString().slice(0, 10);
+const versionLine = refLabel
+    ? `Vencord: ${version} (${refLabel})`
+    : `Vencord: ${version}${commit ? ` (${commit})` : ""}`;
 writeFileSync(join(out, "VERSION.txt"), [
     "VencordPGP installer payload",
-    `Vencord: ${version}${commit ? ` (${commit})` : ""}`,
+    versionLine,
     `Build: ${stamp}`,
     "Plugin: VencordPGP (userplugin vencordPgp)",
     "Incluye: patcher.js, preload.js, renderer.js, renderer.css (+ licencias)",

@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 /**
- * Rebuilds installer/payload (and optionally the release ZIP) from the latest
- * Vencord release with the VencordPGP userplugin.
+ * Rebuilds installer/payload (and optionally the release ZIP) from a Vencord
+ * release tag, branch tip, or specific commit, with the VencordPGP userplugin.
  *
  * Usage:
  *   node scripts/update-vencord-payload.mjs
- *   node scripts/update-vencord-payload.mjs --version v1.15.16
+ *   node scripts/update-vencord-payload.mjs --version v1.15.17
+ *   node scripts/update-vencord-payload.mjs --ref main
+ *   node scripts/update-vencord-payload.mjs --ref <full-40-char-sha>
  *   node scripts/update-vencord-payload.mjs --install
  *   node scripts/update-vencord-payload.mjs --no-zip --clean
  *
  * Options:
- *   --version <tag|latest>  Vencord tag to build (default: latest release tag)
+ *   --version <tag|latest>  Vencord release tag to build (default: latest release tag)
+ *   --ref <branch|sha>      Build the tip of a branch or a specific commit instead of a
+ *                           release tag (e.g. --ref main to include unreleased fixes)
  *   --dir <path>            checkout directory (default: <temp>/vencord-pgp-build)
  *   --fresh                 delete and clone the checkout even if it exists
  *   --clean                 remove the checkout after a successful build
@@ -83,6 +87,48 @@ function normalizeTag(input) {
     return tag;
 }
 
+function remoteSha(ref) {
+    const output = execFileSync("git", ["ls-remote", vencordRepo, ref], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+    });
+    const line = output.trim().split(/\r?\n/).find(Boolean);
+    return line ? line.split("\t")[0] : null;
+}
+
+// Resolves what to build: { kind, name, sha, dirName, fetchRef }.
+function resolveTarget() {
+    const refArg = argValue("--ref", null);
+    const versionArg = argValue("--version", "latest");
+
+    if (refArg) {
+        if (args.includes("--version")) {
+            throw new Error("Use either --version or --ref, not both.");
+        }
+        if (/^[0-9a-f]{7,40}$/i.test(refArg)) {
+            if (refArg.length !== 40) {
+                throw new Error("--ref with a commit requires the full 40-character SHA.");
+            }
+            const sha = refArg.toLowerCase();
+            return { kind: "commit", name: refArg, sha, dirName: `commit-${sha.slice(0, 7)}`, fetchRef: sha };
+        }
+        const sha = remoteSha(`refs/heads/${refArg}`);
+        if (!sha) throw new Error(`Vencord branch not found upstream: ${refArg}`);
+        return {
+            kind: "branch",
+            name: refArg,
+            sha,
+            dirName: refArg.replace(/[^\w.-]+/g, "-"),
+            fetchRef: refArg,
+        };
+    }
+
+    const tag = versionArg === "latest" ? latestTag() : normalizeTag(versionArg);
+    const sha = remoteSha(`refs/tags/${tag}`);
+    if (!sha) throw new Error(`Vencord tag not found upstream: ${tag}`);
+    return { kind: "tag", name: tag, sha, dirName: tag, fetchRef: tag };
+}
+
 function runFile(command, commandArgs, options = {}) {
     console.log(`\n> ${command} ${commandArgs.join(" ")}`);
     execFileSync(command, commandArgs, { stdio: "inherit", ...options });
@@ -97,51 +143,77 @@ function pnpm(commandArgs, cwd) {
     runShell(`corepack pnpm ${commandArgs.join(" ")}`, cwd);
 }
 
+function checkoutVencord(target, checkoutBase, checkout, fresh) {
+    const headMatches = () => {
+        try {
+            const head = execFileSync("git", ["-C", checkout, "rev-parse", "HEAD"], {
+                encoding: "utf8",
+                stdio: ["ignore", "pipe", "ignore"],
+            }).trim();
+            return head === target.sha;
+        } catch {
+            return false;
+        }
+    };
+
+    if (existsSync(checkout) && !fresh && headMatches()) {
+        console.log(`\nReusing checkout: ${checkout} (${target.sha.slice(0, 7)})`);
+        return;
+    }
+
+    if (existsSync(checkout) && !fresh && target.kind !== "tag") {
+        console.log(`\nUpdating checkout in place: ${checkout}`);
+        try {
+            runFile("git", ["-C", checkout, "fetch", "--depth", "1", "origin", target.fetchRef], { cwd: checkoutBase });
+            runFile("git", ["-C", checkout, "checkout", "-f", "FETCH_HEAD"], { cwd: checkoutBase });
+            if (headMatches()) return;
+            console.warn("\nIn-place update did not reach the requested commit; re-cloning.");
+        } catch {
+            console.warn("\nIn-place update failed; re-cloning.");
+        }
+    }
+
+    if (existsSync(checkout)) {
+        console.log(`\nRemoving old checkout: ${checkout}`);
+        rmSync(checkout, { recursive: true, force: true });
+    }
+
+    if (target.kind === "tag") {
+        runFile("git", ["clone", "--depth", "1", "--branch", target.name, vencordRepo, checkout], { cwd: checkoutBase });
+    } else {
+        mkdirSync(checkout, { recursive: true });
+        runFile("git", ["init"], { cwd: checkout });
+        runFile("git", ["remote", "add", "origin", vencordRepo], { cwd: checkout });
+        runFile("git", ["fetch", "--depth", "1", "origin", target.fetchRef], { cwd: checkout });
+        runFile("git", ["checkout", "-f", "FETCH_HEAD"], { cwd: checkout });
+    }
+
+    if (!headMatches()) {
+        throw new Error(`Checkout HEAD does not match the requested commit ${target.sha}.`);
+    }
+}
+
 function main() {
     if (hasFlag("--help") || hasFlag("-h")) {
         printHelp();
         return;
     }
 
-    const versionArg = argValue("--version", "latest");
-    const tag = versionArg === "latest" ? latestTag() : normalizeTag(versionArg);
+    const target = resolveTarget();
     const checkoutBase = resolve(argValue("--dir", join(tmpdir(), "vencord-pgp-build")));
-    const checkout = join(checkoutBase, tag);
+    const checkout = join(checkoutBase, target.dirName);
     const fresh = hasFlag("--fresh");
     const clean = hasFlag("--clean");
     const noZip = hasFlag("--no-zip");
     const install = hasFlag("--install");
 
     console.log("VencordPGP payload update");
-    console.log(`Vencord: ${tag}`);
+    console.log(`Vencord: ${target.kind === "tag" ? target.name : `${target.name} @ ${target.sha.slice(0, 7)}`}`);
     console.log(`Checkout: ${checkout}`);
     console.log(`Repo: ${repoRoot}`);
 
     mkdirSync(checkoutBase, { recursive: true });
-
-    let reuse = false;
-    if (existsSync(checkout) && !fresh) {
-        try {
-            const current = execFileSync("git", ["-C", checkout, "describe", "--tags", "--exact-match"], {
-                encoding: "utf8",
-                stdio: ["ignore", "pipe", "ignore"],
-            }).trim();
-            reuse = current === tag;
-        } catch {
-            reuse = false;
-        }
-    }
-
-    if (existsSync(checkout) && !reuse) {
-        console.log(`\nRemoving old checkout: ${checkout}`);
-        rmSync(checkout, { recursive: true, force: true });
-    }
-
-    if (!reuse) {
-        runFile("git", ["clone", "--depth", "1", "--branch", tag, vencordRepo, checkout], { cwd: checkoutBase });
-    } else {
-        console.log(`\nReusing checkout: ${checkout}`);
-    }
+    checkoutVencord(target, checkoutBase, checkout, fresh);
 
     const pluginSource = join(repoRoot, "vencord-plugin", "vencordPgp");
     const pluginDest = join(checkout, "src", "userplugins", "vencordPgp");
@@ -169,9 +241,10 @@ function main() {
         throw new Error("The built renderer does not contain VencordPGP.");
     }
 
-    runFile(process.execPath, [join(repoRoot, "scripts", "build-installer-payload.mjs"), checkout, repoRoot], {
-        cwd: repoRoot,
-    });
+    const refLabel = target.kind === "tag" ? null : `${target.name} @ ${target.sha.slice(0, 7)}`;
+    const payloadArgs = [join(repoRoot, "scripts", "build-installer-payload.mjs"), checkout, repoRoot];
+    if (refLabel) payloadArgs.push(refLabel);
+    runFile(process.execPath, payloadArgs, { cwd: repoRoot });
 
     if (!noZip) {
         if (process.platform !== "win32") {
